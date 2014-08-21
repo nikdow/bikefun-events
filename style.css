@@ -1,0 +1,10 @@
+/*
+*   Styles for displaying the event posts
+*/
+
+.full-events .eventtext {
+    font-size: 18px;
+    font-weight: 600;
+    border-bottom: solid #AAA 1px;
+    border-top: solid #777 1px;
+}
