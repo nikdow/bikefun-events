@@ -523,8 +523,8 @@ function event_details($content) {
     $time_format = get_option('time_format');
     $stime = date($time_format, $sd + get_option( 'gmt_offset' ) * 3600);
     $etime = date($time_format, $ed + get_option( 'gmt_offset' ) * 3600);
-    $startout = date("l, F j, Y", $sd );
-    $endout = date("l, F j, Y", $ed );
+    $startout = date("l, F j, Y", $sd + get_option( 'gmt_offset' ) * 3600 );
+    $endout = date("l, F j, Y", $ed + get_option( 'gmt_offset' ) * 3600 );
     $output .= "<div>Start: " . $startout . " " . $stime . "</div>";
     $output .= "<div>Finish: " . ($endout===$startout ? "" : $endout . " ") . $etime . "</div>";
     $output .= "<div>Meet at: " . get_post_meta( $post->ID, 'tf_events_place', true );
@@ -534,3 +534,7 @@ function event_details($content) {
 }
 add_filter( 'the_content', 'event_details' );
 
+/*
+ *  one line listing of events for home page
+ */
+require plugin_dir_path( __FILE__ ) . "list-events.php";

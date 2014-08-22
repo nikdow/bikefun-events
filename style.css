@@ -8,3 +8,47 @@
     border-bottom: solid #AAA 1px;
     border-top: solid #777 1px;
 }
+table#events th {
+    font-weight: bold;
+}
+table#events, table#events th, table#events td {
+    border: none;
+}
+
+.pagination {
+    clear:both;
+    padding:20px 0;
+    position:relative;
+    font-size:11px;
+    line-height:13px;
+}
+
+.pagination span, .pagination a {
+    display:block;
+    float:left;
+    margin: 0px 2px 0px 0;
+    padding:6px 9px 5px 9px;
+    text-decoration:none;
+    width:auto;
+    color:#fff;
+    background: #555;
+}
+.pagination a {
+    cursor: pointer;
+}
+
+.pagination a:hover{
+    color:#fff;
+    background: #3279BB;
+}
+
+.pagination .current, .pagination .inactive {
+    padding:0px 9px 0px 9px;
+    background: #3279BB;
+    color:#fff;
+}
+
+.farleft {
+    margin-left: -9999px !important;
+    height: 10px;
+}
