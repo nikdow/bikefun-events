@@ -527,7 +527,7 @@ function event_details($content) {
     $endout = date("l, F j, Y", $ed + get_option( 'gmt_offset' ) * 3600 );
     $output .= "<div>Start: " . $startout . " " . $stime . "</div>";
     $output .= "<div>Finish: " . ($endout===$startout ? "" : $endout . " ") . $etime . "</div>";
-    $output .= "<div>Meet at: " . get_post_meta( $post->ID, 'tf_events_place', true );
+    $output .= "<div>Meet at: " . get_post_meta( $post->ID, 'tf_events_place', true ) . "</div>";
     $url = get_post_meta( $post->ID, 'tf_events_url', true);
     if( $url ) $output .= "<div>More information: <a href='" . $url . "' target='_blank'>" . $url . "</a></div>";
     return $output . $content;
@@ -538,3 +538,70 @@ add_filter( 'the_content', 'event_details' );
  *  one line listing of events for home page
  */
 require plugin_dir_path( __FILE__ ) . "list-events.php";
+/*
+ * RSS feed
+ */
+remove_all_actions( 'do_feed_rss2' );
+add_action( 'do_feed_rss2', 'events_feed_rss2', 10, 1 );
+function events_feed_rss2( ) {
+    $rss_template = plugin_dir_path( __FILE__ ) . 'feed-rss2.php';
+    if( get_query_var( 'post_type' ) == 'tf_events' and file_exists( $rss_template ) )
+        load_template( $rss_template );
+}
+
+function myfeed_request($qv) {
+    if (isset($qv['feed'])) {
+        $qv['post_type'] = "tf_events";
+    }
+    return $qv;
+}
+add_filter('request', 'myfeed_request');
+/**
+ * Add function to widgets_init that'll load our widget.
+ */
+add_action( 'widgets_init', 'load_RSS_widget' );
+
+/**
+ * Register widget.
+ */
+function load_RSS_widget() {
+	register_widget( 'Events_RSS' );
+}
+
+class Events_RSS extends WP_Widget {
+    function __construct() {
+		$widget_ops = array('classname' => 'widget_event_feed', 'description' => __( 'RSS feed of events.') );
+		parent::__construct('RSS', __('RSS'), $widget_ops);
+	}
+
+	public function widget( $args, $instance ) {
+		extract($args);
+                $title = apply_filters( 'widget_title', $instance['title'] );
+
+		/** This filter is documented in wp-includes/default-widgets.php */
+		$title = apply_filters( 'widget_title', empty( $instance['title'] ) ? '' : $instance['title'], $instance, $this->id_base );
+
+		echo $before_widget;
+                    
+                ?>
+                <a href="<?=bloginfo('rss2_url') . "&post_type=tf_events";?>"><?=$title?></a>
+                <?php
+                
+                echo $after_widget;
+        }
+        
+        public function form ( $instance ) {
+            if ( isset( $instance[ 'title' ] ) ) {
+			$title = $instance[ 'title' ];
+		}
+		else {
+			$title = __( 'New title', 'text_domain' );
+		}
+		?>
+		<p>
+		<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label> 
+		<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>">
+		</p>
+                <?php
+        }
+}
