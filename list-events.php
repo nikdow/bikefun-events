@@ -81,11 +81,13 @@ add_shortcode('tf-events-short', 'events_list_short' );
  */
 function get_events( $first_event, $rows_per_page ){
     global $wpdb;
+    $now = time() + ( get_option( 'gmt_offset' ) * 3600 );
     $query = $wpdb->prepare ( 
-        "SELECT p.post_title, p.ID, pms.meta_value AS startdate from " . 
-        $wpdb->posts . " p" .
+        "SELECT p.post_title, p.ID, pms.meta_value AS startdate from " . $wpdb->posts . " p" .
         " LEFT JOIN " . $wpdb->postmeta . " pms ON pms.post_id=p.ID AND pms.meta_key='tf_events_startdate'" . 
-        " WHERE p.post_type='tf_events' AND p.`post_status`='publish' ORDER BY startdate ASC LIMIT %d,%d", $first_event, $rows_per_page 
+        " LEFT JOIN " . $wpdb->postmeta . " pme ON pme.post_id=p.ID AND pme.meta_key='tf_events_enddate'" .
+        " WHERE p.post_type='tf_events' AND p.`post_status`='publish' AND pme.meta_value > " . $now .
+        " ORDER BY startdate ASC LIMIT %d,%d", $first_event, $rows_per_page 
     );
     $rows = $wpdb->get_results ( $query );
     $output = array();
