@@ -532,6 +532,10 @@ function event_details($content) {
     if( $url ) $output .= "<div>More information: <a href='" . $url . "' target='_blank'>" . $url . "</a></div>";
     $postput = "";
     $postput .= "<div>iCal download  - coming soon</div>";
+    $now = time();
+    if( $ed < $now ) {
+        $output .= "<h2>Warning - you are viewing a past event</h2>";
+    }
     return $output . $content . $postput;
 }
 add_filter( 'the_content', 'event_details' );
