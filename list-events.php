@@ -97,7 +97,7 @@ function get_events( $first_event, $rows_per_page ){
             'title'=>$row->post_title,
             'startdate'=>$startout,
             'starttime'=>$stime,
-            'id'=> current_user_can('moderate_comments') ? $row->ID : "",
+            'id'=> $row->ID,
         );
     }
     return $output;
