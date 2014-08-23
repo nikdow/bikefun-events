@@ -530,7 +530,9 @@ function event_details($content) {
     $output .= "<div>Meet at: " . get_post_meta( $post->ID, 'tf_events_place', true ) . "</div>";
     $url = get_post_meta( $post->ID, 'tf_events_url', true);
     if( $url ) $output .= "<div>More information: <a href='" . $url . "' target='_blank'>" . $url . "</a></div>";
-    return $output . $content;
+    $postput = "";
+    $postput .= "<div>iCal download  - coming soon</div>";
+    return $output . $content . $postput;
 }
 add_filter( 'the_content', 'event_details' );
 
