@@ -1,0 +1,38 @@
+#register .leftcol {
+    text-align: right;
+    margin-right: 3px;
+    font-size: 14px;
+}
+#register .rightcol input {
+    width: 195px;
+}
+#register .smallfont {
+    font-size: 11px;
+    line-height: 13px;
+}
+#register input.inputc {
+    line-height: 15px;
+}
+#returnMessage {
+    font-weight: bold;
+}
+
+.removed {
+    display: none;
+}
+
+/* Metabox */
+ 
+.tf-meta {  }
+.tf-meta ul { list-style: none; }
+.tf-meta ul li { height: 20px; clear:both; margin: 0 0 15px 0;}
+.tf-meta ul li.tall { height: auto; }
+.tf-meta ul li label { width: 100px; display:block; float:left; padding-top:4px; }
+.tf-meta ul li input { width:212px; display:block; float:left; }
+.tf-meta ul li em { width: 200px; display:block; float:left; color:gray; margin-left:10px; padding-top: 4px}
+.tf-meta ul li input[type=checkbox] { width: auto; margin-top: 5px; }
+.tf-meta ul li input.wide {width: 400px; }
+
+.mce-edit-area {
+    border: solid grey 1px !important;
+}

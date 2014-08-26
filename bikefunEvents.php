@@ -611,3 +611,146 @@ class Events_RSS extends WP_Widget {
                 <?php
         }
 }
+
+/*
+ * AJAX call to add a new event
+ */
+add_action( 'wp_ajax_newEvent', 'bf_newEvent' );
+add_action( 'wp_ajax_nopriv_newEvent', 'bf_newEvent' );
+
+function bf_newEvent() {
+    $title = $_POST['title'];
+    $tf_events_email = $_POST['tf_events_email'];
+    $tf_events_place = $_POST['tf_events_place'];
+    $tf_events_url = $_POST['tf_events_url'];
+    $tf_description = $_POST['tf_description'];
+   
+    $areYouThere = $_POST['areYouThere'];
+    if (
+        ! isset( $_POST['fs_nonce'] ) 
+        || ! wp_verify_nonce( $_POST['fs_nonce'], 'bf_new_event' ) 
+    ) {
+
+       echo json_encode( array( 'error'=>'Sorry, your nonce did not verify.' ) );
+       die;
+    }
+    
+    if($tf_events_email==="") {
+        echo json_encode( array( 'error'=>'Please supply an email address' ) );
+        die;
+    }
+    global $wpdb;
+    
+    if( $areYouThere !== "y" ) {
+        echo json_encode( array('error'=>'Please tick the box to show you are not a robot') );
+        die;
+    }
+        
+    $post_id = wp_insert_post(array(
+            'post_title'=>$title,
+            'post_status'=>'draft',
+            'post_type'=>'tf_events',
+            'ping_status'=>false,
+            'post_content'=>$tf_description,
+        ),
+        true
+    );
+    if(is_wp_error($post_id)) {
+        echo json_encode( array( 'error'=>$post_id->get_error_message() ) );
+        die;
+    }
+    $updatestartd = strtotime ( $_POST["tf_events_startdate"] . $_POST["tf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
+    update_post_meta($post->ID, "tf_events_startdate", $updatestartd );
+
+    if( isset( $_POST[ "tf_events_enddate" ] ) ) :
+        $updateendd = strtotime ( $_POST["tf_events_enddate"] . $_POST["tf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
+        update_post_meta($post->ID, "tf_events_enddate", $updateendd );
+    endif;
+   
+    update_post_meta($post->ID, "tf_events_email", $_POST["tf_events_email"] );
+    update_post_meta($post->ID, "tf_events_place", $_POST["tf_events_place"] );
+    update_post_meta($post->ID, "tf_events_url", $_POST["tf_events_url"] );
+        
+    $secret = generateRandomString();
+    update_post_meta ( $post_id, "tf_events_secret", $secret );
+
+    $subject = "Thanks for listing with Bikefun"; // use blog title in subject!
+    $headers = array();
+    $headers[] = 'From: Bikefun <info@bikefun.org>';
+    $headers[] = "Content-type: text/html";
+    $message = "<P>Thanks for listing with Bikefun. Your event will be visible once a moderator has approved it.</P>";
+    $message .= "<P>Below is a link you can use to edit the event you have listed.</P>";
+    $message .= "<P><a href='http://www.freestylecyclists.org/confirm?secret=" . $secret . "'>Click here to edit your event</a></P>";
+    wp_mail( $fs_signature_email, $subject, $message, $headers );
+    
+    echo json_encode( array( 'success'=>'You have successfully registered your support. Look for an email from us and click on the link to confirm your email address - until then we can\'t count you.' ) );
+    die();
+}
+/*
+ * used in secret key for email login link
+ */
+function generateRandomString($length = 10) {
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, strlen($characters) - 1)];
+    }
+    return $randomString;
+}
+/* 
+ * Shortcode for event submission form
+ */
+function register_event_script() {
+    wp_register_script('jquery-ui', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js', array( 'jquery') );
+    wp_register_style('ui-datepicker', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css');
+    wp_register_script('event', plugins_url( 'js/event.js' , __FILE__ ), array('jquery', 'jquery-ui' ) );
+    wp_register_style(' bf-event_styles', plugins_url( 'css/style.css', __FILE__ ) );	
+}
+function enqueue_event_register_script() {	// support for signup form, which appears on two pages and in a popup
+    global $add_event_register_script;
+    if( ! $add_event_register_script ) return;
+    wp_enqueue_script('jquery-ui');
+    wp_enqueue_style('ui-datepicker');
+    wp_localize_script('event', 'data', array('stylesheetUri' => plugin_dir_url( __FILE__ ), 'ajaxUrl'=> admin_url('admin-ajax.php') ) );
+    wp_enqueue_script('event');
+    wp_enqueue_style(' bf-event_styles');
+}
+add_action('init', 'register_event_script' );
+add_action( 'wp_footer', 'enqueue_event_register_script' );
+function bf_event_register ( $atts ) { 
+    global $add_event_register_script;
+    $add_event_register_script = true;
+    
+    $a = shortcode_atts( array(
+        'narrow' => '0',
+        'popup' => '0',
+    ), $atts );
+    $narrow = $a['narrow']==='1';
+    $popup = $a['popup']==='1';
+    
+    ob_start() ?>
+
+    <form name="register<?=($popup ? "_popup" : "");?>">
+        <div class="tf-meta">
+            <ul>            
+                <li><label>Event title</label><input <?=($narrow || $popup) ? " class='smallinput'" : "class='wide'";?> type="text" name="title" id="name<?=($popup ? "_popup" : "");?>"></li>
+                <li><label>Start Date</label><input name="tf_events_startdate" class="tfdate" value="<?php echo $clean_sd; ?>" /></li>
+                <li><label>Start Time</label><input name="tf_events_starttime" value="<?php echo $clean_st; ?>" /></li>
+                <li><label>End Date</label><input name="tf_events_enddate" class="tfdate" value="<?php echo $clean_ed; ?>" /></li>
+                <li><label>End Time</label><input name="tf_events_endtime" value="<?php echo $clean_et; ?>" /></li>
+                <li><label>Your Email</label><input type="email" id="email" name="tf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
+                <li><label>Meeting Place</label><input class="wide" name="tf_events_place" value="<?php echo $meta_place; ?>" /></li>
+                <li><label>Web Page</label><input type="url" name="tf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
+                <li><label>Description</label></li>
+                <li class="tall"><?php wp_editor( "&nbsp;", "editcontent", array("media_buttons"=>false, "textarea_name"=>"tf_description" ) ); ?></li>
+                <li><input id="simpleTuring<?=($popup ? "_popup" : "");?>" name="areYouThere" type="checkbox" value="y" class="inputc"></td><td class="medfont">Tick this box to show you are not a robot</li>
+                <li><button type="button" id="saveButton<?=($popup ? "_popup" : "");?>">Save</button></li>
+                <li><div id="ajax-loading<?=($popup ? "_popup" : "");?>" class="farleft"><img src="<?php echo get_site_url();?>/wp-includes/js/thickbox/loadingAnimation.gif"></div></li>
+                <li><div id="returnMessage<?=($popup ? "_popup" : "");?>"></div></li>
+            </ul> 
+        <input name="action" value="newEvent" type="hidden">
+        <?php wp_nonce_field( "bf_new_event", "fs_nonce");?>
+    </form>
+<?php return ob_get_clean();
+}
+add_shortcode('event', bf_event_register );
