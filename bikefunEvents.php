@@ -44,7 +44,7 @@ function create_event_postype() {
         'hierarchical' => false,
     //    'rewrite' => array( "slug" => "events" ),
         'rewrite' => false,
-        'supports'=> array('title', 'thumbnail', 'excerpt', 'editor') ,
+        'supports'=> array('title', 'thumbnail', 'editor', 'comments' ) ,
         'show_in_nav_menus' => true,
         'taxonomies' => array( 'tf_eventcategory', 'post_tag')
     );
@@ -673,7 +673,7 @@ function bf_newEvent() {
         
     $secret = generateRandomString();
     update_post_meta ( $post_id, "tf_events_secret", $secret );
-
+    
     $subject = "Thanks for listing with Bikefun"; // use blog title in subject!
     $headers = array();
     $headers[] = 'From: Bikefun <info@bikefun.org>';

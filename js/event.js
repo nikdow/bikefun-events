@@ -33,7 +33,10 @@ jQuery(document).ready(function($){
           return false;
         }
         if($('#name'+str).val()==="") $('#public'+str).prop('checked', false);
+        ed = tinyMCE.get(wpActiveEditor)
+        $('#editcontent').text(ed.getContent());
         var senddata = $(document.forms['register'+str]).serialize();
+        ed.isNotDirty = true;
         $('#ajax-loading'+str).removeClass('farleft');
         $('#returnMessage'+str).html('&nbsp;');
         $('#saveButton'+str).prop('disabled', true);
