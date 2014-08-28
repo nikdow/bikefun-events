@@ -660,16 +660,16 @@ function bf_newEvent() {
         die;
     }
     $updatestartd = strtotime ( $_POST["tf_events_startdate"] . $_POST["tf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
-    update_post_meta($post->ID, "tf_events_startdate", $updatestartd );
+    update_post_meta($post_id, "tf_events_startdate", $updatestartd );
 
     if( isset( $_POST[ "tf_events_enddate" ] ) ) :
         $updateendd = strtotime ( $_POST["tf_events_enddate"] . $_POST["tf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
-        update_post_meta($post->ID, "tf_events_enddate", $updateendd );
+        update_post_meta($post_id, "tf_events_enddate", $updateendd );
     endif;
    
-    update_post_meta($post->ID, "tf_events_email", $_POST["tf_events_email"] );
-    update_post_meta($post->ID, "tf_events_place", $_POST["tf_events_place"] );
-    update_post_meta($post->ID, "tf_events_url", $_POST["tf_events_url"] );
+    update_post_meta($post_id, "tf_events_email", $tf_events_email );
+    update_post_meta($post_id, "tf_events_place", $tf_events_place );
+    update_post_meta($post_id, "tf_events_url", $tf_events_url );
         
     $secret = generateRandomString();
     update_post_meta ( $post_id, "tf_events_secret", $secret );
@@ -680,10 +680,10 @@ function bf_newEvent() {
     $headers[] = "Content-type: text/html";
     $message = "<P>Thanks for listing with Bikefun. Your event will be visible once a moderator has approved it.</P>";
     $message .= "<P>Below is a link you can use to edit the event you have listed.</P>";
-    $message .= "<P><a href='http://www.freestylecyclists.org/confirm?secret=" . $secret . "'>Click here to edit your event</a></P>";
-    wp_mail( $fs_signature_email, $subject, $message, $headers );
+    $message .= "<P><a href='http://www.bikefun.org/edit?secret=" . $secret . "'>Click here to edit your event</a></P>";
+    wp_mail( $tf_events_email, $subject, $message, $headers );
     
-    echo json_encode( array( 'success'=>'You have successfully registered your support. Look for an email from us and click on the link to confirm your email address - until then we can\'t count you.' ) );
+    echo json_encode( array( 'success'=>'Thanks for listing with Bikefun. Look for an email from us with a link that allows you to edit your event.' ) );
     die();
 }
 /*
