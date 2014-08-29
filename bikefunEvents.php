@@ -91,7 +91,7 @@ add_action( 'init', 'create_eventcategory_taxonomy', 0 );
 
 function wpd_post_link( $post_link, $id = 0 ){
     $post = get_post($id);
-    if ( is_object( $post ) && $post->post_type == 'tf-events' && $post->post_type === "tf_events" ) {
+    if ( is_object( $post ) && $post->post_type == 'tf_events' && $post->post_type === "tf_events" ) {
             $tf_events_startdate = get_post_meta($post->ID, 'tf_events_startdate', true ) + get_option( 'gmt_offset' ) * 3600;
             $year = date("Y", $tf_events_startdate );
             $month = date("m", $tf_events_startdate );
