@@ -89,13 +89,22 @@ register_taxonomy('tf_eventcategory','tf_events', array(
  
 add_action( 'init', 'create_eventcategory_taxonomy', 0 );
 
+function wpd_taxonomy_pagination_rewrites(){
+    add_rewrite_rule(
+        'tf-events/([^/]+)/([0-9]+)/([0-9]+)/?$',
+        'index.php?post_type=tf_events&p=$matches[1]/$matches[2]',
+        'top'
+    );
+}
+add_action( 'init', 'wpd_taxonomy_pagination_rewrites' );
+
 function wpd_post_link( $post_link, $id = 0 ){
     $post = get_post($id);
     if ( is_object( $post ) && $post->post_type == 'tf_events' && $post->post_type === "tf_events" ) {
             $tf_events_startdate = get_post_meta($post->ID, 'tf_events_startdate', true ) + get_option( 'gmt_offset' ) * 3600;
             $year = date("Y", $tf_events_startdate );
             $month = date("m", $tf_events_startdate );
-            return str_replace( '%tf_eventcategory%' , '/' . $year . '/' . $month . '/' , $post_link );
+            return str_replace( '%tf_eventcategory%' , $year . '/' . $month . '/' , $post_link );
     }
     return $post_link;
 }
