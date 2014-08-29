@@ -8,6 +8,9 @@
     border-bottom: solid #AAA 1px;
     border-top: solid #777 1px;
 }
+table#events {
+    line-height: 1;
+}
 table#events th {
     font-weight: bold;
 }

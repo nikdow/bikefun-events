@@ -43,7 +43,11 @@ function create_event_postype() {
         'menu_icon' => plugins_url( 'img/calendar.gif', __FILE__ ),
         'hierarchical' => false,
     //    'rewrite' => array( "slug" => "events" ),
-        'rewrite' => false,
+        'has_archive' => 'custom-type',
+        'rewrite' => array(
+            'slug' => 'tf-events/%tf_eventcategory%',
+            'with_front' => false
+            ),
         'supports'=> array('title', 'thumbnail', 'editor', 'comments' ) ,
         'show_in_nav_menus' => true,
         'taxonomies' => array( 'tf_eventcategory', 'post_tag')
@@ -78,11 +82,24 @@ register_taxonomy('tf_eventcategory','tf_events', array(
     'hierarchical' => true,
     'show_ui' => true,
     'query_var' => true,
-    'rewrite' => array( 'slug' => 'event-category' ),
+    'rewrite' => array( 'slug' => 'tf-events',
+        'with_front'=>false),
 ));
 }
  
 add_action( 'init', 'create_eventcategory_taxonomy', 0 );
+
+function wpd_post_link( $post_link, $id = 0 ){
+    $post = get_post($id);
+    if ( is_object( $post ) && $post->post_type == 'tf-events' && $post->post_type === "tf_events" ) {
+            $tf_events_startdate = get_post_meta($post->ID, 'tf_events_startdate', true ) + get_option( 'gmt_offset' ) * 3600;
+            $year = date("Y", $tf_events_startdate );
+            $month = date("m", $tf_events_startdate );
+            return str_replace( '%tf_eventcategory%' , '/' . $year . '/' . $month . '/' , $post_link );
+    }
+    return $post_link;
+}
+add_filter( 'post_type_link', 'wpd_post_link', 1, 3 );
 
 // 3. Show Columns
 
