@@ -568,6 +568,7 @@ function event_details($content) {
     if($post->post_type !== 'tf_events' ) return $content;
     
     $output = "";
+    $output = $_SERVER['query_string'] . "<br/>";
     $sd = get_post_meta( $post->ID, 'tf_events_startdate', true);
     $ed = get_post_meta( $post->ID, 'tf_events_enddate', true);
     $time_format = get_option('time_format');
