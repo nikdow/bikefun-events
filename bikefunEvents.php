@@ -18,7 +18,7 @@ function event_rewrite_rules() {
 
     $wp_rewrite->add_rewrite_tag( '%eventyear%', '([0-9]{4})', 'tf_events_year=');
     $wp_rewrite->add_rewrite_tag( '%eventmonth%', '([0-9]{2})', 'tf_events_month=');
-    
+//    $wp_rewrite->add_permastruct('tf_events', '/events/%tf_events_year%/%tf_events_month%/%postname%', false);
     add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php??post_type=tf_events&pagename=$matches[2]', 'top' );
 }
 add_action('init', 'event_rewrite_rules');
@@ -78,12 +78,13 @@ function create_event_postype() {
         'capability_type' => 'post',
         'menu_icon' => plugins_url( 'img/calendar.gif', __FILE__ ),
         'hierarchical' => false,
-    //    'rewrite' => array( "slug" => "events" ),
-        'has_archive' => 'custom-type',
+        'has_archive' => 'tf_events',
         'rewrite' => array(
             'slug' => 'events/%eventyear%/%eventmonth%',
             'with_front' => false
          ),
+        'publicly_queryable' => true,
+        'query_var' => true,
         'supports'=> array('title', 'thumbnail', 'editor', 'comments' ) ,
         'show_in_nav_menus' => true,
         'taxonomies' => array( 'tf_eventcategory', 'post_tag')
