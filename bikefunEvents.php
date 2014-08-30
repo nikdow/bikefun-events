@@ -23,13 +23,6 @@ function event_rewrite_rules() {
 }
 add_action('init', 'event_rewrite_rules');
 
-function add_query_vars_filter( $vars ){
-  $vars[] = "tf_events_year";
-  $vars[] = "tf_events_month";
-  return $vars;
-}
-add_filter( 'query_vars', 'add_query_vars_filter' );
-
 add_filter('post_type_link', 'event_permalink', 10, 4);
 
 function event_permalink($permalink, $post, $leavename) {
@@ -373,8 +366,8 @@ function save_tf_events(){
     endif;
     $updatestartd = strtotime ( $_POST["tf_events_startdate"] . $_POST["tf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
     update_post_meta($post->ID, "tf_events_startdate", $updatestartd );
-    update_post_meta($post->ID, "tf_events_year", date("m", $updatestartd ) );
-    update_post_meta($post->ID, "tf_events_month", date("Y", $updatestartd ) );
+    update_post_meta($post->ID, "tf_events_year", date("Y", $updatestartd ) );
+    update_post_meta($post->ID, "tf_events_month", date("m", $updatestartd ) );
 
     if( ! isset( $_POST[ "tf_events_enddate" ] ) ) :
         return $post;
