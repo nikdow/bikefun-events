@@ -18,9 +18,17 @@ function event_rewrite_rules() {
 
     $wp_rewrite->add_rewrite_tag( '%eventyear%', '([0-9]{4})', 'tf_events_year=');
     $wp_rewrite->add_rewrite_tag( '%eventmonth%', '([0-9]{2})', 'tf_events_month=');
+    
     add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php??post_type=tf_events&pagename=$matches[2]', 'top' );
 }
 add_action('init', 'event_rewrite_rules');
+
+function add_query_vars_filter( $vars ){
+  $vars[] = "tf_events_year";
+  $vars[] = "tf_events_month";
+  return $vars;
+}
+add_filter( 'query_vars', 'add_query_vars_filter' );
 
 add_filter('post_type_link', 'event_permalink', 10, 4);
 
