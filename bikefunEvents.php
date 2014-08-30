@@ -12,6 +12,41 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+
+function event_rewrite_rules() {
+    global $wp_rewrite;
+
+    $wp_rewrite->add_rewrite_tag( '%year%', '([0-9]{4})', 'year=');
+    $wp_rewrite->add_rewrite_tag( '%month%', '([0-9]{2})', 'month=');
+    add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php??post_type=tf_events&pagename=$matches[2]', 'top' );
+}
+add_action('init', 'event_rewrite_rules');
+
+add_filter('post_type_link', 'event_permalink', 10, 4);
+
+function event_permalink($permalink, $post, $leavename) {
+    if ( get_post_type( $post ) === "tf_events" ) {
+        $sd = get_post_meta( $post->ID, 'tf_events_startdate', true);
+        $year = date('Y', $sd + get_option( 'gmt_offset' ) * 3600);
+        $month = date('m', $sd + get_option( 'gmt_offset' ) * 3600);
+
+        $rewritecode = array(
+         '%year%',
+         '%month%',
+         $leavename? '' : '%postname%',
+        );
+
+        $rewritereplace = array(
+         $year,
+         $month,
+         $post->post_name
+        );
+
+        $permalink = str_replace($rewritecode, $rewritereplace, $permalink);
+    }
+    return $permalink;
+}
+
 // 1. Custom Post Type Registration (Events)
 
 add_action( 'init', 'create_event_postype' );
@@ -45,9 +80,9 @@ function create_event_postype() {
     //    'rewrite' => array( "slug" => "events" ),
         'has_archive' => 'custom-type',
         'rewrite' => array(
-            'slug' => 'tf-events/%tf_eventcategory%',
+            'slug' => 'events/%year%/%month%',
             'with_front' => false
-            ),
+         ),
         'supports'=> array('title', 'thumbnail', 'editor', 'comments' ) ,
         'show_in_nav_menus' => true,
         'taxonomies' => array( 'tf_eventcategory', 'post_tag')
@@ -82,33 +117,12 @@ register_taxonomy('tf_eventcategory','tf_events', array(
     'hierarchical' => true,
     'show_ui' => true,
     'query_var' => true,
-    'rewrite' => array( 'slug' => 'tf-events',
+    'rewrite' => array( 'slug' => 'events',
         'with_front'=>false),
 ));
 }
  
 add_action( 'init', 'create_eventcategory_taxonomy', 0 );
-
-function wpd_taxonomy_pagination_rewrites(){
-    add_rewrite_rule(
-        'tf-events/([^/]+)/([0-9]+)/([0-9]+)/?$',
-        'index.php?post_type=tf_events&p=$matches[1]/$matches[2]',
-        'top'
-    );
-}
-add_action( 'init', 'wpd_taxonomy_pagination_rewrites' );
-
-function wpd_post_link( $post_link, $id = 0 ){
-    $post = get_post($id);
-    if ( is_object( $post ) && $post->post_type == 'tf_events' && $post->post_type === "tf_events" ) {
-            $tf_events_startdate = get_post_meta($post->ID, 'tf_events_startdate', true ) + get_option( 'gmt_offset' ) * 3600;
-            $year = date("Y", $tf_events_startdate );
-            $month = date("m", $tf_events_startdate );
-            return str_replace( '%tf_eventcategory%' , $year . '/' . $month . '/' , $post_link );
-    }
-    return $post_link;
-}
-add_filter( 'post_type_link', 'wpd_post_link', 1, 3 );
 
 // 3. Show Columns
 
