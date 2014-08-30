@@ -16,8 +16,8 @@
 function event_rewrite_rules() {
     global $wp_rewrite;
 
-    $wp_rewrite->add_rewrite_tag( '%year%', '([0-9]{4})', 'year=');
-    $wp_rewrite->add_rewrite_tag( '%month%', '([0-9]{2})', 'month=');
+    $wp_rewrite->add_rewrite_tag( '%eventyear%', '([0-9]{4})', 'eventyear=');
+    $wp_rewrite->add_rewrite_tag( '%eventmonth%', '([0-9]{2})', 'eventmonth=');
     add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php??post_type=tf_events&pagename=$matches[2]', 'top' );
 }
 add_action('init', 'event_rewrite_rules');
@@ -31,8 +31,8 @@ function event_permalink($permalink, $post, $leavename) {
         $month = date('m', $sd + get_option( 'gmt_offset' ) * 3600);
 
         $rewritecode = array(
-         '%year%',
-         '%month%',
+         '%eventyear%',
+         '%eventmonth%',
          $leavename? '' : '%postname%',
         );
 
@@ -80,7 +80,7 @@ function create_event_postype() {
     //    'rewrite' => array( "slug" => "events" ),
         'has_archive' => 'custom-type',
         'rewrite' => array(
-            'slug' => 'events/%year%/%month%',
+            'slug' => 'events/%eventyear%/%eventmonth%',
             'with_front' => false
          ),
         'supports'=> array('title', 'thumbnail', 'editor', 'comments' ) ,
