@@ -16,8 +16,8 @@
 function event_rewrite_rules() {
     global $wp_rewrite;
 
-    $wp_rewrite->add_rewrite_tag( '%eventyear%', '([0-9]{4})', 'eventyear=');
-    $wp_rewrite->add_rewrite_tag( '%eventmonth%', '([0-9]{2})', 'eventmonth=');
+    $wp_rewrite->add_rewrite_tag( '%eventyear%', '([0-9]{4})', 'tf_events_year=');
+    $wp_rewrite->add_rewrite_tag( '%eventmonth%', '([0-9]{2})', 'tf_events_month=');
     add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php??post_type=tf_events&pagename=$matches[2]', 'top' );
 }
 add_action('init', 'event_rewrite_rules');
@@ -365,6 +365,8 @@ function save_tf_events(){
     endif;
     $updatestartd = strtotime ( $_POST["tf_events_startdate"] . $_POST["tf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
     update_post_meta($post->ID, "tf_events_startdate", $updatestartd );
+    update_post_meta($post->ID, "tf_events_year", date("m", $updatestartd ) );
+    update_post_meta($post->ID, "tf_events_month", date("Y", $updatestartd ) );
 
     if( ! isset( $_POST[ "tf_events_enddate" ] ) ) :
         return $post;
@@ -701,6 +703,9 @@ function bf_newEvent() {
     }
     $updatestartd = strtotime ( $_POST["tf_events_startdate"] . $_POST["tf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
     update_post_meta($post_id, "tf_events_startdate", $updatestartd );
+    update_post_meta($post->ID, "tf_events_year", date("m", $updatestartd ) );
+    update_post_meta($post->ID, "tf_events_month", date("Y", $updatestartd ) );
+
 
     if( isset( $_POST[ "tf_events_enddate" ] ) ) :
         $updateendd = strtotime ( $_POST["tf_events_enddate"] . $_POST["tf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
