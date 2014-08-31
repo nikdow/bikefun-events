@@ -562,7 +562,6 @@ function event_details($content) {
     if($post->post_type !== 'tf_events' ) return $content;
     
     $output = "";
-    $output = $_SERVER['QUERY_STRING'] . "<br/>";
     $sd = get_post_meta( $post->ID, 'tf_events_startdate', true);
     $ed = get_post_meta( $post->ID, 'tf_events_enddate', true);
     $time_format = get_option('time_format');
@@ -663,12 +662,25 @@ class Events_RSS extends WP_Widget {
 add_action( 'wp_ajax_newEvent', 'bf_newEvent' );
 add_action( 'wp_ajax_nopriv_newEvent', 'bf_newEvent' );
 
+add_action('wp_print_scripts','include_jquery_form_plugin');
+function include_jquery_form_plugin(){
+    global $post;
+    if ($post->post_title === "List an Event") { // only add this on the page that allows the upload
+        wp_enqueue_script( 'jquery' );
+        wp_enqueue_script( 'jquery-form',array('jquery'),false,true ); 
+    }
+}
+
 function bf_newEvent() {
     $title = $_POST['title'];
     $tf_events_email = $_POST['tf_events_email'];
     $tf_events_place = $_POST['tf_events_place'];
     $tf_events_url = $_POST['tf_events_url'];
     $tf_description = $_POST['tf_description'];
+    
+    require_once(ABSPATH . "wp-admin" . '/includes/image.php');
+    require_once(ABSPATH . "wp-admin" . '/includes/file.php');
+    require_once(ABSPATH . "wp-admin" . '/includes/media.php');
    
     $areYouThere = $_POST['areYouThere'];
     if (
@@ -718,7 +730,35 @@ function bf_newEvent() {
     update_post_meta($post_id, "tf_events_email", $tf_events_email );
     update_post_meta($post_id, "tf_events_place", $tf_events_place );
     update_post_meta($post_id, "tf_events_url", $tf_events_url );
-        
+     
+    if ($_FILES) {
+        foreach ($_FILES as $file => $array) {
+            
+            switch ($_FILES[$file]['error']) {
+                case UPLOAD_ERR_OK:
+                    break;
+                case UPLOAD_ERR_NO_FILE:
+                    echo json_encode( array('error'=>'No file sent.') );
+                    die;
+                case UPLOAD_ERR_INI_SIZE:
+                case UPLOAD_ERR_FORM_SIZE:
+                    echo json_encode( array('error'=>'Exceeded filesize limit.') );
+                    die;
+                default:
+                    echo json_encode( array('error'=>'Unknown errors.') );
+                    die;
+            }
+
+            // You should also check filesize here. 
+            if ($_FILES['upfile']['size'] > 2000000) {
+                echo json_encode( array('error'=>'Exceeded filesize limit 2MB.') );
+            }
+            $attach_id = media_handle_upload( $file, $post_id );
+            //  attached image becomes thumbnail:
+            update_post_meta($post_id,'_thumbnail_id',$attach_id);
+        }   
+    }
+    
     $secret = generateRandomString();
     update_post_meta ( $post_id, "tf_events_secret", $secret );
     
@@ -775,29 +815,33 @@ function bf_event_register ( $atts ) {
     ), $atts );
     $narrow = $a['narrow']==='1';
     $popup = $a['popup']==='1';
+    $clean_sd = date("j F Y");
+    $clean_ed = date("j F Y");
     
     ob_start() ?>
 
-    <form name="register<?=($popup ? "_popup" : "");?>">
+    <form id="register" name="register" method="post" action="#" enctype="multipart/form-data">
         <div class="tf-meta">
             <ul>            
-                <li><label>Event title</label><input <?=($narrow || $popup) ? " class='smallinput'" : "class='wide'";?> type="text" name="title" id="name<?=($popup ? "_popup" : "");?>"></li>
+                <li><label>Event title</label><input class='wide' type="text" name="title" id="name"></li>
                 <li><label>Start Date</label><input name="tf_events_startdate" class="tfdate" value="<?php echo $clean_sd; ?>" /></li>
-                <li><label>Start Time</label><input name="tf_events_starttime" value="<?php echo $clean_st; ?>" /></li>
+                <li><label>Start Time</label><input name="tf_events_starttime" value="" /></li>
                 <li><label>End Date</label><input name="tf_events_enddate" class="tfdate" value="<?php echo $clean_ed; ?>" /></li>
-                <li><label>End Time</label><input name="tf_events_endtime" value="<?php echo $clean_et; ?>" /></li>
+                <li><label>End Time</label><input name="tf_events_endtime" value="" /></li>
                 <li><label>Your Email</label><input type="email" id="email" name="tf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
                 <li><label>Meeting Place</label><input class="wide" name="tf_events_place" value="<?php echo $meta_place; ?>" /></li>
                 <li><label>Web Page</label><input type="url" name="tf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
+                <li><label>Upload image</label><input type="file" name="thumbnail" id="thumbnail"></li>
                 <li><label>Description</label></li>
                 <li class="tall"><?php wp_editor( "&nbsp;", "editcontent", array("media_buttons"=>false, "textarea_name"=>"tf_description" ) ); ?></li>
                 <li><input id="simpleTuring<?=($popup ? "_popup" : "");?>" name="areYouThere" type="checkbox" value="y" class="inputc"></td><td class="medfont">Tick this box to show you are not a robot</li>
-                <li><button type="button" id="saveButton<?=($popup ? "_popup" : "");?>">Save</button></li>
-                <li><div id="ajax-loading<?=($popup ? "_popup" : "");?>" class="farleft"><img src="<?php echo get_site_url();?>/wp-includes/js/thickbox/loadingAnimation.gif"></div></li>
-                <li><div id="returnMessage<?=($popup ? "_popup" : "");?>"></div></li>
+                <li><input type="submit" id="saveButton" value="Send" /></li>
+                <li><div id="ajax-loading" class="farleft"><img src="<?php echo get_site_url();?>/wp-includes/js/thickbox/loadingAnimation.gif"></div></li>
+                <li><div id="returnMessage"></div></li>
             </ul> 
-        <input name="action" value="newEvent" type="hidden">
-        <?php wp_nonce_field( "bf_new_event", "fs_nonce");?>
+            <input name="action" value="newEvent" type="hidden">
+            <?php wp_nonce_field( "bf_new_event", "fs_nonce");?>
+        </div>
     </form>
 <?php return ob_get_clean();
 }
