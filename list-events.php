@@ -48,7 +48,7 @@ function events_list_short (  ) {
                 <tr ng-repeat="event in events">
                     <td>{{event.startdate}}</td>
                     <td>{{event.starttime}}</td>
-                    <td><a href="<?=get_bloginfo('url')?>?post_type=tf_events&p={{event.id}}">{{event.title}}</a></td>
+                    <td><a href="{{event.permalink}}">{{event.title}}</a></td>
                 </tr>
             </tbody>
         </table>
@@ -100,6 +100,7 @@ function get_events( $first_event, $rows_per_page ){
             'startdate'=>$startout,
             'starttime'=>$stime,
             'id'=> $row->ID,
+            'permalink' => post_permalink( $row->ID ),
         );
     }
     return $output;

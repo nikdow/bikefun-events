@@ -304,6 +304,8 @@ function tf_events_meta () {
     $meta_email = $custom["tf_events_email"][0];
     $meta_place = $custom["tf_events_place"][0];
     $meta_url = $custom["tf_events_url"][0];
+    $meta_campaign_iCalNative = $custom["iCalNative"][0];
+    $meta_campaign_iCalEmbed = $custom["iCalEmbed"][0];
 
     // - grab wp time format -
 
@@ -312,7 +314,7 @@ function tf_events_meta () {
 
     // - populate today if empty, 00:00 for time -
 
-    if ($meta_sd == null) { $meta_sd = time(); $meta_ed = $meta_sd; $meta_st = 0; $meta_et = 0;}
+    if ($custom["tf_events_startdate"][0] == null) { $meta_sd = time(); $meta_ed = $meta_sd; $meta_st = 0; $meta_et = 0;}
 
     // - convert to pretty formats -
 
@@ -338,6 +340,9 @@ function tf_events_meta () {
         <li><label>Your Email</label><input type="email" name="tf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
         <li><label>Meeting Place</label><input class="wide" name="tf_events_place" value="<?php echo $meta_place; ?>" /></li>
         <li><label>Web Page</label><input class="wide" type="url" name="tf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
+        <li><label><b>iCal downloads</b></label></li>
+        <li><label>from this site</label><?=$meta_campaign_iCalNative?></li>
+        <li><label>via embedding</label><?=$meta_campaign_iCalEmbed?></li>
     </ul>
     </div>
     <?php
@@ -576,7 +581,7 @@ function event_details($content) {
     $url = get_post_meta( $post->ID, 'tf_events_url', true);
     if( $url ) $output .= "<div>More information: <a href='" . $url . "' target='_blank'>" . $url . "</a></div>";
     $postput = "";
-    $postput .= "<div><img class='right-margin' src='" . plugins_url( 'img/cal.jpg' , __FILE__ ) . "' border='0'/><a href='" . get_site_url() . "?iCal&p=" . $post->ID . "'>Add to your calendar</a></div>";
+    $postput .= "<div><img class='right-margin' src='" . plugins_url( 'img/cal.jpg' , __FILE__ ) . "' border='0'/><a href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalNative'>Add to your calendar</a></div>";
     $postput .= "<div id=\"embedCalCode\">" .
         "Want people to put this event in their calendar? <span id=\"embedClick\">Click here</span> for embed code for your website:" . 
         "</div>" .
@@ -588,7 +593,7 @@ function event_details($content) {
     if( $ed < $now ) {
         $output .= "<h2>Warning - you are viewing a past event</h2>";
     } else {
-        $output .= "<br/><br/>";
+        $output .= "<br/>";
     }
     return $output . $content . $postput;
     }
@@ -675,7 +680,7 @@ add_action( 'wp_ajax_nopriv_newEvent', 'bf_newEvent' );
 add_action('wp_print_scripts','include_jquery_form_plugin');
 function include_jquery_form_plugin(){
     global $post;
-    if ($post->post_title === "List an Event") { // only add this on the page that allows the upload
+    if ($post->post_title === "List Your Event") { // only add this on the page that allows the upload
         wp_enqueue_script( 'jquery' );
         wp_enqueue_script( 'jquery-form',array('jquery'),false,true ); 
     }
@@ -746,6 +751,11 @@ function bf_newEvent() {
     if ($_FILES) {
         foreach ($_FILES as $file => $array) {
             
+            if ( !isset($_FILES[$file]['error']) || is_array($_FILES[$file]['error']) ) {
+                echo json_encode( array('error'=>'Invalid upload parameters' ) );
+                die;
+            }
+            
             switch ($_FILES[$file]['error']) {
                 case UPLOAD_ERR_OK:
                     break;
@@ -762,9 +772,42 @@ function bf_newEvent() {
             }
 
             // You should also check filesize here. 
-            if ($_FILES['upfile']['size'] > 2000000) {
+            if ($_FILES[$file]['size'] > 2000000) {
                 echo json_encode( array('error'=>'Exceeded filesize limit 2MB.') );
+                die;
             }
+            
+            // DO NOT TRUST $_FILES['upfile']['mime'] VALUE !!
+            // Check MIME Type by yourself.
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            if (false === $ext = array_search(
+                $finfo->file($_FILES[$file]['tmp_name']),
+                array(
+                    'jpg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'gif' => 'image/gif',
+                    'ical' => 'text/calendar'
+                ),
+                true
+            )) {
+                echo json_encode( array('error'=>'incorrect file type') );
+                die;
+            }
+            
+            // You should name it uniquely.
+            // DO NOT USE $_FILES['upfile']['name'] WITHOUT ANY VALIDATION !!
+            // On this example, obtain safe unique name from its binary data.
+            if (!move_uploaded_file(
+                $_FILES[$file]['tmp_name'],
+                sprintf('./' . ($ext==="ical" ? "ical" : "thumbnails") . '/%s.%s',
+                    sha1_file($_FILES[$file]['tmp_name']),
+                    $ext
+                )
+            )) {
+                echo json_encode( array('error'=>'failed to move uploaded file.' ) );
+                die;
+            }
+            
             $attach_id = media_handle_upload( $file, $post_id );
             //  attached image becomes thumbnail:
             update_post_meta($post_id,'_thumbnail_id',$attach_id);
@@ -871,6 +914,7 @@ if (isset($_REQUEST['iCal'])) {
 
 function bf_iCal() {
     $post_id = $_REQUEST['p'];
+    $campaign = $_REQUEST['campaign'];
     $post = get_post( $post_id, 'OBJECT' );
     $custom = get_post_custom( $post_id );
     $meta_sd = $custom["tf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
@@ -878,6 +922,13 @@ function bf_iCal() {
     $meta_email = $custom["tf_events_email"][0];
     $meta_place = $custom["tf_events_place"][0];
     $meta_url = $custom["tf_events_url"][0];
+    
+    if( $campaign ) {
+        $before = $custom[$campaign ][0];
+        if( ! $before ) $before = 0;
+        $before++;
+        update_post_meta( $post_id, $campaign, $before ); 
+    }
     
     $tf = 'Ymd\THis';
     

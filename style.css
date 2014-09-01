@@ -76,3 +76,7 @@ span#embedClick {
 #embedCalCode {
     margin-top: 5px;
 }
+
+.entry-thumbnail img {
+    margin: 0 0 10px 10px !important;
+}
