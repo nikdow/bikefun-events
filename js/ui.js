@@ -21,5 +21,5 @@ jQuery(document).ready(function($) {
 function showEmbedCode() {
     $ = jQuery;
   $('#embedCalCode').addClass('removed');
-  $('#embedCode').removeClass('removed');
+  $('#embedCode').removeClass('removed'); 
 }
