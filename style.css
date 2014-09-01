@@ -55,3 +55,24 @@ table#events, table#events th, table#events td {
     margin-left: -9999px !important;
     height: 10px;
 }
+
+.right-margin {
+    margin-right: 5px;
+}
+
+.removed {
+    display: none;
+}
+
+span#embedClick {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#embedCode input {
+    width: 600px;
+}
+
+#embedCalCode {
+    margin-top: 5px;
+}

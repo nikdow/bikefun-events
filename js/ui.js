@@ -13,4 +13,13 @@ jQuery(document).ready(function($) {
                       function () {
                             $(this).hide();
                       });
+    
+    $('#embedClick').click( showEmbedCode );
+    
 });
+
+function showEmbedCode() {
+    $ = jQuery;
+  $('#embedCalCode').addClass('removed');
+  $('#embedCode').removeClass('removed');
+}

@@ -544,6 +544,7 @@ endforeach;
 else :
 endif;
 
+
 // ===== RETURN: FULL EVENTS SECTION =====
 
 $output = ob_get_contents();
@@ -575,13 +576,22 @@ function event_details($content) {
     $url = get_post_meta( $post->ID, 'tf_events_url', true);
     if( $url ) $output .= "<div>More information: <a href='" . $url . "' target='_blank'>" . $url . "</a></div>";
     $postput = "";
-    $postput .= "<div>iCal download  - coming soon</div>";
+    $postput .= "<div><img class='right-margin' src='" . plugins_url( 'img/cal.jpg' , __FILE__ ) . "' border='0'/><a href='" . get_site_url() . "?iCal&p=" . $post->ID . "'>Add to your calendar</a></div>";
+    $postput .= "<div id=\"embedCalCode\">" .
+        "Want people to put this event in their calendar? <span id=\"embedClick\">Click here</span> for embed code for your website:" . 
+        "</div>" .
+        "<div id=\"embedCode\" class=\"removed\">" .
+        "<input name=\"embedCode\" id=\"embedCodeField\" value=\"<a href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalEmbed'>" .
+        "<img border='0' src='" . plugins_url( 'img/cal.jpg', __FILE__ ) . "'/> Add to your calendar: " . $post->post_title . "</a>\" />" .
+        "</div>";
     $now = time();
     if( $ed < $now ) {
         $output .= "<h2>Warning - you are viewing a past event</h2>";
+    } else {
+        $output .= "<br/><br/>";
     }
     return $output . $content . $postput;
-}
+    }
 add_filter( 'the_content', 'event_details' );
 
 /*
@@ -677,6 +687,7 @@ function bf_newEvent() {
     $tf_events_place = $_POST['tf_events_place'];
     $tf_events_url = $_POST['tf_events_url'];
     $tf_description = $_POST['tf_description'];
+    $tf_description_text = $_POST['tf_description_text'];
     
     require_once(ABSPATH . "wp-admin" . '/includes/image.php');
     require_once(ABSPATH . "wp-admin" . '/includes/file.php');
@@ -720,6 +731,7 @@ function bf_newEvent() {
     update_post_meta($post_id, "tf_events_startdate", $updatestartd );
     update_post_meta($post->ID, "tf_events_year", date("m", $updatestartd ) );
     update_post_meta($post->ID, "tf_events_month", date("Y", $updatestartd ) );
+    update_post_meta ( $post->ID, "tf_description_text", $tf_description_text );
 
 
     if( isset( $_POST[ "tf_events_enddate" ] ) ) :
@@ -835,14 +847,80 @@ function bf_event_register ( $atts ) {
                 <li><label>Description</label></li>
                 <li class="tall"><?php wp_editor( "&nbsp;", "editcontent", array("media_buttons"=>false, "textarea_name"=>"tf_description" ) ); ?></li>
                 <li><input id="simpleTuring<?=($popup ? "_popup" : "");?>" name="areYouThere" type="checkbox" value="y" class="inputc"></td><td class="medfont">Tick this box to show you are not a robot</li>
-                <li><input type="submit" id="saveButton" value="Send" /></li>
+                <li><button type="button" id="saveButton" value="Send">submit</button></li>
                 <li><div id="ajax-loading" class="farleft"><img src="<?php echo get_site_url();?>/wp-includes/js/thickbox/loadingAnimation.gif"></div></li>
                 <li><div id="returnMessage"></div></li>
             </ul> 
             <input name="action" value="newEvent" type="hidden">
+            <input name="tf_description_text" id="tf_description_text" type="hidden"><!-- receives the text version of the HTML -->
             <?php wp_nonce_field( "bf_new_event", "fs_nonce");?>
         </div>
     </form>
 <?php return ob_get_clean();
 }
 add_shortcode('event', bf_event_register );
+
+/*
+ * iCal file
+ */
+if (isset($_REQUEST['iCal'])) {
+
+    add_action('init', 'bf_iCal');
+
+}
+
+function bf_iCal() {
+    $post_id = $_REQUEST['p'];
+    $post = get_post( $post_id, 'OBJECT' );
+    $custom = get_post_custom( $post_id );
+    $meta_sd = $custom["tf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $meta_ed = $custom["tf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $meta_email = $custom["tf_events_email"][0];
+    $meta_place = $custom["tf_events_place"][0];
+    $meta_url = $custom["tf_events_url"][0];
+    
+    $tf = 'Ymd\THis';
+    
+    header('Content-type: text/calendar; method="PUBLISH"; component="VEVENT";');
+    header('Content-disposition: attachment; filename=bikefun.ics;');
+    echo "BEGIN:VCALENDAR\n";
+    echo "VERSION:2.0\n";
+	echo "PRODID:-//CBDWeb//Bikefun//EN\n";
+	echo "METHOD:PUBLISH\n";
+	echo "BEGIN:VTIMEZONE\n";
+	echo "TZID:" .   get_option('timezone_string') . "\n";
+	echo "BEGIN:STANDARD\n";
+	echo "DTSTART:19500402T020000\n";
+	echo "TZOFFSETFROM:+1100\n";
+	echo "TZOFFSETTO:+1000\n";
+	echo "RRULE:FREQ=YEARLY;BYMINUTE=0;BYHOUR=2;BYDAY=1SU;BYMONTH=4\n";
+	echo "END:STANDARD\n";
+	echo "BEGIN:DAYLIGHT\n";
+	echo "DTSTART:19501001T020000\n";
+	echo "TZOFFSETFROM:+1000\n";
+	echo "TZOFFSETTO:+1100\n";
+	echo "RRULE:FREQ=YEARLY;BYMINUTE=0;BYHOUR=2;BYDAY=1SU;BYMONTH=10\n";
+	echo "END:DAYLIGHT\n";
+	echo "END:VTIMEZONE\n";
+	echo "BEGIN:VEVENT\n";
+        echo 'DTSTART;TZID="' . get_option('timezone_string') . '":' . date( $tf, $meta_sd ) . "\n";
+        echo 'DTEND;TZID="' . get_option('timezone_string') . '":' . date( $tf, $meta_ed ) . "\n";
+        echo 'DTSTAMP:' . date( $tf, time() + get_option( 'gmt_offset' ) * 3600 ) . "\n";
+        echo "CLASS:PUBLIC\n";
+        echo "SUMMARY:" . $post->post_title . "\n";
+        echo "LOCATION:" . $meta_place . "\n";
+        $content = str_replace("\n", "\n  ", wpautop ( $post->post_content ) ); // folding as per https://www.ietf.org/rfc/rfc2445.txt
+        echo "X-ALT-DESC;FMTTYPE=text/html:" . $content . "<br/>Check here for the latest updates: " . post_permalink( $post_id ) . "\n";
+        echo "DESCRIPTION:" . $post->post_content; // note line breaks are literal but other HTML still embedded :(
+        echo '\nCheck here for the latest updates: ' . post_permalink( $post_id ) . "\n"; // first \n is passed not interpreted because single quotes
+        echo "Link:" . $meta_url . "\n";
+        $post_thumbnail_id = get_post_thumbnail_id( $post_id );
+        if( $post_thumbnail_id ) {
+            $thumbnail = wp_get_attachment_image_src( $post_thumbnail_id, "medium" );
+            echo "ATTACH:" . $thumbnail[0] . "\n";
+        }
+        echo "UID:" . $post_id . "\n";
+        echo "END:VEVENT\n";
+        echo "END:VCALENDAR\n";
+    die;
+}
