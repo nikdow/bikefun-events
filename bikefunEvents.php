@@ -159,7 +159,6 @@ function bf_events_edit_columns($columns) {
  
 $columns = array(
     "cb" => "<input type=\"checkbox\" />",
-    "bf_col_ev_cat" => "Category",
     "bf_col_ev_date" => "Dates",
     "bf_col_ev_times" => "Times",
 //    "tf_col_ev_thumb" => "Thumbnail",
@@ -195,18 +194,28 @@ break;
 case "bf_col_ev_date":
     // - show dates -
     $startd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $endd = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+    if( isset ($custom["bf_events_enddate"])) {
+        $endd = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+        $enddate = date("j F Y", $endd);
+    } else {
+        $enddate = "";
+    }
     $startdate = date("j F Y", $startd);
-    $enddate = date("j F Y", $endd);
+    
     echo $startdate . '<br /><em>' . $enddate . '</em>';
 break;
 case "bf_col_ev_times":
     // - show times -
     $startt = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $endt = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
     $time_format = get_option('time_format');
+    if( isset ($custom["bf_events_enddate"])) {
+        $endt = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+        $endtime = date($time_format, $endt);
+    } else {
+        $endtime = "";
+    }
     $starttime = date($time_format, $startt);
-    $endtime = date($time_format, $endt);
+    
     echo $starttime . ' - ' .$endtime;
 break;
 case 'date':
@@ -293,7 +302,7 @@ function bf_events_meta () {
     global $post;
     $custom = get_post_custom($post->ID);
     $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $meta_ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $meta_ed = isset ( $custom["bf_events_enddate"] ) ? $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600 : 0;
     $meta_st = $meta_sd;
     $meta_et = $meta_ed;
     $meta_email = $custom["bf_events_email"][0];
@@ -301,6 +310,7 @@ function bf_events_meta () {
     $meta_url = $custom["bf_events_url"][0];
     $meta_campaign_iCalNative = $custom["iCalNative"][0];
     $meta_campaign_iCalEmbed = $custom["iCalEmbed"][0];
+    $meta_image = $custom["bf_events_image"][0];
 
     // - grab wp time format -
 
@@ -314,9 +324,14 @@ function bf_events_meta () {
     // - convert to pretty formats -
 
     $clean_sd = date("D, d M Y", $meta_sd);
-    $clean_ed = date("D, d M Y", $meta_ed);
     $clean_st = date($time_format, $meta_st);
-    $clean_et = date($time_format, $meta_et);
+    if ( $meta_ed ) {
+        $clean_ed = date("D, d M Y", $meta_ed);
+        $clean_et = date($time_format, $meta_et);
+    } else {
+        $clean_ed = "";
+        $clean_et = "";
+    }
 
     // - security -
 
@@ -335,6 +350,7 @@ function bf_events_meta () {
         <li><label>Your Email</label><input type="email" name="bf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
         <li><label>Meeting Place</label><input class="wide" name="bf_events_place" value="<?php echo $meta_place; ?>" /></li>
         <li><label>Web Page</label><input class="wide" type="url" name="bf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
+        <li><label>Image imported</label><input class="wide" type="url" name="bf_events_image" value="<?=$meta_image?>" /></li>
         <li><label><b>iCal downloads</b></label></li>
         <li><label>from this site</label><?=$meta_campaign_iCalNative?></li>
         <li><label>via embedding</label><?=$meta_campaign_iCalEmbed?></li>
@@ -567,11 +583,11 @@ function event_details($content) {
     $ed = get_post_meta( $post->ID, 'bf_events_enddate', true);
     $time_format = get_option('time_format');
     $stime = date($time_format, $sd + get_option( 'gmt_offset' ) * 3600);
-    $etime = date($time_format, $ed + get_option( 'gmt_offset' ) * 3600);
+    if( $ed ) $etime = date($time_format, $ed + get_option( 'gmt_offset' ) * 3600);
     $startout = date("l, F j, Y", $sd + get_option( 'gmt_offset' ) * 3600 );
-    $endout = date("l, F j, Y", $ed + get_option( 'gmt_offset' ) * 3600 );
+    if ( $ed ) $endout = date("l, F j, Y", $ed + get_option( 'gmt_offset' ) * 3600 );
     $output .= "<div>Start: " . $startout . " " . $stime . "</div>";
-    $output .= "<div>Finish: " . ($endout===$startout ? "" : $endout . " ") . $etime . "</div>";
+    if ( $ed ) $output .= "<div>Finish: " . ($endout===$startout ? "" : $endout . " ") . $etime . "</div>";
     $output .= "<div>Meet at: " . get_post_meta( $post->ID, 'bf_events_place', true ) . "</div>";
     $url = get_post_meta( $post->ID, 'bf_events_url', true);
     if( $url ) $output .= "<div>More information: <a href='" . $url . "' target='_blank'>" . $url . "</a></div>";
