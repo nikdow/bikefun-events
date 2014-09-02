@@ -33,7 +33,7 @@ function events_list_short (  ) {
             _events = <?=json_encode($events)?>;
             <?php
             global $wpdb;
-            $query = $wpdb->prepare('select count(*) from ' . $wpdb->posts . ' where post_type="tf_events" and post_status="publish"', '' );
+            $query = $wpdb->prepare('select count(*) from ' . $wpdb->posts . ' where post_type="bf_events" and post_status="publish"', '' );
             $pages = $wpdb->get_col( $query );
             $pages = floor ( ($pages[0] + 0.9999) / $rows_per_page ) + 1;
             if(!$pages) $pages = 1;
@@ -74,7 +74,7 @@ function events_list_short (  ) {
     <?php
     return ob_get_clean();
 }
-add_shortcode('tf-events-short', 'events_list_short' );
+add_shortcode('bf-events-short', 'events_list_short' );
 
 /* 
  * showing events to the public - called from ajax wrapper and also when loading page initially
@@ -84,9 +84,9 @@ function get_events( $first_event, $rows_per_page ){
     $now = time() + ( get_option( 'gmt_offset' ) * 3600 );
     $query = $wpdb->prepare ( 
         "SELECT p.post_title, p.ID, pms.meta_value AS startdate from " . $wpdb->posts . " p" .
-        " LEFT JOIN " . $wpdb->postmeta . " pms ON pms.post_id=p.ID AND pms.meta_key='tf_events_startdate'" . 
-        " LEFT JOIN " . $wpdb->postmeta . " pme ON pme.post_id=p.ID AND pme.meta_key='tf_events_enddate'" .
-        " WHERE p.post_type='tf_events' AND p.`post_status`='publish' AND pme.meta_value > " . $now .
+        " LEFT JOIN " . $wpdb->postmeta . " pms ON pms.post_id=p.ID AND pms.meta_key='bf_events_startdate'" . 
+        " LEFT JOIN " . $wpdb->postmeta . " pme ON pme.post_id=p.ID AND pme.meta_key='bf_events_enddate'" .
+        " WHERE p.post_type='bf_events' AND p.`post_status`='publish' AND pme.meta_value > " . $now .
         " ORDER BY startdate ASC LIMIT %d,%d", $first_event, $rows_per_page 
     );
     $rows = $wpdb->get_results ( $query );
@@ -108,10 +108,10 @@ function get_events( $first_event, $rows_per_page ){
 /*
  * AJAX wrapper to get sigs
  */
-add_action( 'wp_ajax_get_events', 'tf_get_events' );
-add_action( 'wp_ajax_nopriv_get_events', 'tf_get_events' );
+add_action( 'wp_ajax_get_events', 'bf_get_events' );
+add_action( 'wp_ajax_nopriv_get_events', 'bf_get_events' );
 
-function tf_get_events() {
+function bf_get_events() {
     $rows_per_page = $_POST['rows_per_page'];
     $page = $_POST['page'];
     $first_event = ( $page - 1 ) * $rows_per_page;

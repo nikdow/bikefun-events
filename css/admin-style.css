@@ -5,17 +5,26 @@
 
 /* Columns CPT Events */
  
-th#tf_col_ev_date, th#tf_col_ev_cat {width:150px}
-td.tf_col_ev_date em {color:gray;}
-th#tf_col_ev_times {width:150px}
-th#tf_col_ev_thumb {width:100px}
+th#bf_col_ev_date, th#bf_col_ev_cat {width:150px}
+td.bf_col_ev_date em {color:gray;}
+th#bf_col_ev_times {width:150px}
+th#bf_col_ev_thumb {width:100px}
 
 /* Metabox */
  
-.tf-meta {  }
-.tf-meta ul li { height: 20px; clear:both; margin: 0 0 15px 0;}
-.tf-meta ul li label { width: 100px; display:block; float:left; padding-top:4px; }
-.tf-meta ul li input { width:125px; display:block; float:left; }
-.tf-meta ul li em { width: 200px; display:block; float:left; color:gray; margin-left:10px; padding-top: 4px}
-.tf-meta ul li input[type=checkbox] { width: auto; margin-top: 5px; }
-.tf-meta ul li input.wide {width: 400px; }
+.bf-meta {  }
+.bf-meta ul li { height: 20px; clear:both; margin: 0 0 15px 0;}
+.bf-meta ul li label { width: 100px; display:block; float:left; padding-top:4px; }
+.bf-meta ul li input { width:125px; display:block; float:left; }
+.bf-meta ul li em { width: 200px; display:block; float:left; color:gray; margin-left:10px; padding-top: 4px}
+.bf-meta ul li input[type=checkbox] { width: auto; margin-top: 5px; }
+.bf-meta ul li input.wide {width: 400px; }
+
+body.post-type-bf_subscription #post-body-content {
+    display: none;
+}
+
+form#newsletter_options textarea {
+    height: 300px;
+    width: 400px;
+}

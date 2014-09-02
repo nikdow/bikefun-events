@@ -72,9 +72,9 @@ echo '<?xml version="1.0" encoding="'.get_option('blog_charset').'"?'.'>'; ?>
             SELECT *
             FROM $wpdb->posts wposts, $wpdb->postmeta metastart, $wpdb->postmeta metaend
             WHERE (wposts.ID = metastart.post_id AND wposts.ID = metaend.post_id)
-            AND (metaend.meta_key = 'tf_events_enddate' AND metaend.meta_value > $now )
-            AND metastart.meta_key = 'tf_events_startdate'
-            AND wposts.post_type = 'tf_events'
+            AND (metaend.meta_key = 'bf_events_enddate' AND metaend.meta_value > $now )
+            AND metastart.meta_key = 'bf_events_startdate'
+            AND wposts.post_type = 'bf_events'
             AND wposts.post_status = 'publish'
             ORDER BY metastart.meta_value ASC
          ";
@@ -84,7 +84,7 @@ echo '<?xml version="1.0" encoding="'.get_option('blog_charset').'"?'.'>'; ?>
         foreach ( $events as $post ) {
             setup_postdata($post);
             $custom = get_post_custom(get_the_ID());
-            $sd = $custom["tf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+            $sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
             $longdate = date("l, F j, Y", $sd);
             $time_format = get_option('time_format');
             $stime = date($time_format, $sd);
@@ -98,7 +98,7 @@ echo '<?xml version="1.0" encoding="'.get_option('blog_charset').'"?'.'>'; ?>
 		
 		<guid isPermaLink="false"><?php the_guid(); ?></guid>
 		<description><![CDATA[<?php echo
-                    "Date: " . $longdate . " Time: " . $stime . " Meet at: " . $custom["tf_events_place"][0]
+                    "Date: " . $longdate . " Time: " . $stime . " Meet at: " . $custom["bf_events_place"][0]
                 ?>]]></description>
 	<?php $content = get_the_content_feed('rss2'); ?>
 	<?php if ( strlen( $content ) > 0 ) : ?>

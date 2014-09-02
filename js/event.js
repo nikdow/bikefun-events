@@ -23,7 +23,6 @@ jQuery(document).ready(function($){
         }
         ed = tinyMCE.get(wpActiveEditor)
         $('#editcontent').text(ed.getContent());
-        $('#tf_description_text').text(ed.getBody().textContent );
         ed.isNotDirty = true;
         $('#ajax-loading').removeClass('farleft');
         $('#returnMessage').html('&nbsp;');

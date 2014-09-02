@@ -23,15 +23,15 @@
 
 /* Metabox */
  
-.tf-meta {  }
-.tf-meta ul { list-style: none; }
-.tf-meta ul li { height: 20px; clear:both; margin: 0 0 15px 0;}
-.tf-meta ul li.tall { height: auto; }
-.tf-meta ul li label { width: 100px; display:block; float:left; padding-top:4px; }
-.tf-meta ul li input { width:212px; display:block; float:left; }
-.tf-meta ul li em { width: 200px; display:block; float:left; color:gray; margin-left:10px; padding-top: 4px}
-.tf-meta ul li input[type=checkbox] { width: auto; margin-top: 5px; }
-.tf-meta ul li input.wide {width: 400px; }
+.bf-meta {  }
+.bf-meta ul { list-style: none; }
+.bf-meta ul li { height: 20px; clear:both; margin: 0 0 15px 0;}
+.bf-meta ul li.tall { height: auto; }
+.bf-meta ul li label { width: 100px; display:block; float:left; padding-top:4px; }
+.bf-meta ul li input { width:212px; display:block; float:left; }
+.bf-meta ul li em { width: 200px; display:block; float:left; color:gray; margin-left:10px; padding-top: 4px}
+.bf-meta ul li input[type=checkbox] { width: auto; margin-top: 5px; }
+.bf-meta ul li input.wide {width: 400px; }
 
 .mce-edit-area {
     border: solid grey 1px !important;

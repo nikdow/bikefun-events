@@ -80,3 +80,18 @@ span#embedClick {
 .entry-thumbnail img {
     margin: 0 0 10px 10px !important;
 }
+
+body.single-bf_events .paging-navigation .nav-next {
+    padding: 0;
+}
+body.single-bf_events .paging-navigation .nav-next span {
+    padding-right: 10px;
+}
+body.single-bf_events .paging-navigation .meta-nav {
+    background-color: inherit !important;
+    color: inherit;
+    display: inline;
+}
+.paging-navigation a:hover .meta-nav {
+    background-color: inherit !important;
+}
