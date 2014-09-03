@@ -474,6 +474,8 @@ add_action('admin_init', 'add_admin_styles' );
  */
 
 // 1) FULL EVENTS
+// NB - this code is not used.  Instead, see the included file list-events.php 
+// which presents a paginated list of events in a more compact format - ngd - 1/9/2014
 //***********************************************************************************
 
 function bf_events_full ( $atts ) {
