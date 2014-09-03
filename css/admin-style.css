@@ -24,7 +24,3 @@ body.post-type-bf_subscription #post-body-content {
     display: none;
 }
 
-form#newsletter_options textarea {
-    height: 400px;
-    width: 800px;
-}
