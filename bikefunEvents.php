@@ -18,7 +18,7 @@ function event_rewrite_rules() {
 
     $wp_rewrite->add_rewrite_tag( '%eventyear%', '([0-9]{4})', 'bf_events_year=');
     $wp_rewrite->add_rewrite_tag( '%eventmonth%', '([0-9]{2})', 'bf_events_month=');
-    $wp_rewrite->add_permastruct('bf_events', '/events/%bf_events_year%/%bf_events_month%/%postname%', false);
+//    $wp_rewrite->add_permastruct('bf_events', '/events/%bf_events_year%/%bf_events_month%/%postname%', false);
     add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php??post_type=bf_events&pagename=$matches[2]', 'top' );
 }
 add_action('init', 'event_rewrite_rules');
