@@ -50,13 +50,12 @@ jQuery(document).ready(function($){
     // bind form using 'ajaxForm' 
     $('#register').ajaxForm(options); 
     
-    $(".tfdate").datepicker({
+    $(".bfdate").datepicker({
         dateFormat: 'D, d M yy',
         showOn: 'button',
         buttonImage: data.stylesheetUri + '/img/calendar.gif',
         buttonImageOnly: true,
         numberOfMonths: 3
-
         });
 });
 
