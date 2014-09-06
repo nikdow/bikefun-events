@@ -107,3 +107,7 @@ body.single-bf_events .paging-navigation .meta-nav {
 .paging-navigation .meta-nav {
     font-size: 20px !important;
 }
+.bf_overline {
+    margin-top: 20px;
+    border-top: solid grey 1px;
+}

@@ -14,6 +14,8 @@ th#bf_col_ev_thumb {width:100px}
  
 .bf-meta {  }
 .bf-meta ul li { height: 20px; clear:both; margin: 0 0 15px 0;}
+.bf-meta ul li.tall { height: auto; }
+.bf-meta ul li.tall label { width: 500px; }
 .bf-meta ul li label { width: 100px; display:block; float:left; padding-top:4px; }
 .bf-meta ul li input { width:125px; display:block; float:left; }
 .bf-meta ul li em { width: 200px; display:block; float:left; color:gray; margin-left:10px; padding-top: 4px}

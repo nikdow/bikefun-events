@@ -6,7 +6,7 @@ jQuery(document).ready(function($){
         var err = false;
         var errmsg = "";
         var field = $('#simpleTuring');
-        if(field && !field.prop("checked") ) {
+        if(field && field.length>0 && !field.prop("checked") ) {
           errmsg += 'You must tick the box that asks if you are not a robot.\n';
           if(!err) field.focus();
           err = true;
@@ -65,4 +65,5 @@ var pattern=/^([a-zA-Z0-9_.-])+@([a-zA-Z0-9_.-])+\.([a-zA-Z])+([a-zA-Z])+/;
 var bool = pattern.test(inputvalue);
 return bool;
 }
+
 
