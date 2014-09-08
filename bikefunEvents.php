@@ -906,7 +906,7 @@ function bf_newEvent() {
     $message = $existing ? 
             "A request has been made to update the description of an event." :
             "A new listing has been submitted for your approval.";
-    $message .= "<P><a href='" . get_site_url() . "/wp-admin/post.php?post=" . $post_id . "&action=edit;?>' target='_blank'>Click here to approve it</a>.</P>";
+    $message .= "<P><a href='" . get_site_url() . "/wp-admin/post.php?post=" . $post_id . "&action=edit' target='_blank'>Click here to approve it</a>.</P>";
     $recipient_option = get_option('event-moderator-email');
     wp_mail ( $recipient_option, $subject, $message, $headers );
     
