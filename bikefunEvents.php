@@ -861,7 +861,7 @@ function bf_newEvent() {
             // You should name it uniquely.
             // DO NOT USE $_FILES['upfile']['name'] WITHOUT ANY VALIDATION !!
             // On this example, obtain safe unique name from its binary data.
-            if (!move_uploaded_file(
+/*            if (!move_uploaded_file(
                 $_FILES[$file]['tmp_name'],
                 sprintf('./uploads/%s.%s',
                     sha1_file($_FILES[$file]['tmp_name']),
@@ -871,7 +871,7 @@ function bf_newEvent() {
                 echo json_encode( array('error'=>'failed to move uploaded file. tmp_name = ' . $_FILES[$file]['tmp_name'] .
                     ", ext = " . $ext ) );
                 die;
-            } 
+            } */
             
             $attach_id = media_handle_upload( $file, $post_id );
             //  attached image becomes thumbnail:
