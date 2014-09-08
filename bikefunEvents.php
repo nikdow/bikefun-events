@@ -971,7 +971,7 @@ function bf_event_register ( $atts ) {
         $post_id = $post->ID;
         $custom = get_post_custom( $post_id );
         $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-        $meta_ed = custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+        $meta_ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
         $clean_sd = date("D, j F Y", $meta_sd );
         $clean_ed = date("D, j F Y", $meta_ed );
         $clean_st = date("g:i a", $meta_sd );
