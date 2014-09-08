@@ -980,7 +980,11 @@ function bf_event_register ( $atts ) {
         $meta_place = $custom["bf_events_place"][0];
         $meta_url = $custom["bf_events_url"][0];
         $bf_pending_description = $custom["bf_pending_description"][0];
-        $content = $bf_pending_description ? $bf_pending_description : $post->post_content;
+        if ( $bf_pending_description ) {
+            $content = $bf_pending_description;
+        } else {
+            $content = $post->post_content;        
+        }
     } else {
         $content = $post->post_content;
     }
