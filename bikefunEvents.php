@@ -971,14 +971,16 @@ function bf_event_register ( $atts ) {
         $post_id = $post->ID;
         $custom = get_post_custom( $post_id );
         $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-        $meta_ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+        $meta_ed = custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
         $clean_sd = date("D, j F Y", $meta_sd );
         $clean_ed = date("D, j F Y", $meta_ed );
         $clean_st = date("g:i a", $meta_sd );
         $clean_et = date("g:i a", $meta_ed );
         $meta_email = $custom["bf_events_email"][0];
         $meta_place = $custom["bf_events_place"][0];
-        $meta_url = $custom["bf_events_url"][0]; 
+        $meta_url = $custom["bf_events_url"][0];
+        $bf_pending_description = $custom["bf_pending_description"];
+        $content = $bf_pending_description ? $bf_pending_description : $post->post_content;
     }
     
     ob_start() ?>
@@ -996,7 +998,7 @@ function bf_event_register ( $atts ) {
                 <li><label>Web Page</label><input type="url" name="bf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
                 <li><label>Upload image</label><input type="file" name="thumbnail" id="thumbnail"></li>
                 <li><label>Description</label></li>
-                <li class="tall"><?php wp_editor( $post->post_content, "editcontent", array("media_buttons"=>false, "textarea_name"=>"bf_description" ) ); ?></li>
+                <li class="tall"><?php wp_editor( $content, "editcontent", array("media_buttons"=>false, "textarea_name"=>"bf_description" ) ); ?></li>
                 <?php if( ! $post ) { ?>
                     <li><input id="simpleTuring" name="areYouThere" type="checkbox" value="y" class="inputc"></td><td class="medfont">Tick this box to show you are not a robot</li>
                 <?php } ?>
