@@ -893,7 +893,7 @@ function bf_newEvent() {
         $message .= "Your event will be visible once a moderator has approved it.</P>";
     }
     $message .= "<P>Below is a " . ($existing ? "new " : "") . "link you can use to edit the event you have listed.</P>";
-    $message .= "<P><a href='http://www.bikefun.org/list-your-event/?secret=" . $secret . "'>Click here to edit your event</a></P>";
+    $message .= "<P><a href='" . get_site_url() . "/list-your-event/?secret=" . $secret . "'>Click here to edit your event</a></P>";
     $message .= "<P>Note the secret key in the link above only works once, but we send you a new email like this one each time, with a new secret in it.";
     wp_mail( $bf_events_email, $subject, $message, $headers );
     /*
