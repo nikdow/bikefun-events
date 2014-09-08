@@ -1199,3 +1199,17 @@ function event_options() {
         </div>
     <?php
 }
+/*
+ * Add link to admin menu bar for Events
+ */
+add_action( 'admin_bar_menu', 'toolbar_event_link', 999 );
+function toolbar_event_link( $wp_admin_bar ) {
+    $args = array ( 
+        'id'=>'bf-events',
+        'title'=>'Events',
+        'parent'=>'site-name',
+        'href'=>get_site_url() . '/wp-admin/edit.php?post_type=bf_events',
+    );
+
+    $wp_admin_bar->add_node( $args );
+}
