@@ -907,7 +907,8 @@ function bf_newEvent() {
             "A request has been made to update the description of an event." :
             "A new listing has been submitted for your approval.";
     $message .= "<P><a href='" . get_site_url() . "/wp-admin/post.php?post=" . $post_id . "&action=edit;?>' target='_blank'>Click here to approve it</a>.</P>";
-    wp_mail ( "moderator@bikefun.org", $subject, $message, $headers );
+    $recipient_option = get_option('event-moderator-email');
+    wp_mail ( $recipient_option, $subject, $message, $headers );
     
     echo json_encode( array( 'success'=>'Thanks for ' . ($existing ? "updating your " : "") . "listing with Bikefun. Look for " . ($existing ? "a new " : "an ") . "email from us with a link that allows you to edit your event." ) );
     die();
@@ -1113,4 +1114,79 @@ function bf_iCal() {
         echo "END:VEVENT\n";
         echo "END:VCALENDAR\n";
     die;
+}
+/*
+ * Options page for Events plugin
+ */
+add_action( 'admin_menu', 'events_menu' );
+
+/** Step 1. */
+function events_menu() {
+        add_submenu_page( 'edit.php?post_type=bf_events', 'Event Options', 'Options', 'manage_options', basename(__FILE__), 'event_options' );
+}
+
+/** Step 3. */
+function event_options() {
+//        bf_newsletter_admin_scripts( "bf_newsletter_options" ); // load the admin CSS
+	if ( !current_user_can( 'manage_options' ) )  {
+		wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+	}
+
+            // variables for the field and option names 
+            $hidden_field_name = 'bf_submit_hidden';
+            $options_array = array ( 
+                array('opt_name'=>'event-moderator-email', 'data_field_name'=>'event-moderator-email', 
+                    'opt_label'=>'Event moderator (comma separated email addresses)', 'field_type'=>'textarea'),
+            );
+
+            // See if the user has posted us some information
+            // If they did, this hidden field will be set to 'Y'
+            if( isset($_POST[ $hidden_field_name ]) && $_POST[ $hidden_field_name ] == 'Y' ) {
+
+                foreach ($options_array as $option_array ) {
+                    
+                    // Read their posted value
+                    $opt_val = stripslashes_deep ( $_POST[ $option_array['data_field_name'] ] );
+
+                    // Save the posted value in the database
+                    update_option( $option_array ['opt_name'], $opt_val );
+                }
+
+                // Put an settings updated message on the screen
+
+                ?>
+                <div class="updated"><p><strong><?php _e('settings saved.' ); ?></strong></p></div>
+            <?php }
+
+            // Now display the settings editing screen
+            ?>
+            <div class="wrap">
+
+            <h2>Event Settings</h2>
+
+            <form name="event_options" id="event_options" method="post" action="">
+                <input type="hidden" name="<?php echo $hidden_field_name; ?>" value="Y">
+
+                <?php 
+                foreach ( $options_array as $option_array ) { 
+                    // Read in existing option value from database
+                    $opt_val = get_option( $option_array[ 'opt_name' ] );
+                    ?>
+                    <p><?php _e( $option_array[ 'opt_label' ] );
+                        if($option_array[ 'field_type' ] === 'textarea' ) { ?>
+                            <textarea name="<?php echo $option_array[ 'data_field_name' ]; ?>"><?php echo $opt_val; ?></textarea>
+                        <?php } else { ?>
+                            <input type="<?=$option_array[ 'field_type' ]?>" name="<?=$option_array[ 'data_field_name' ]?>" value="<?=$opt_val?>"/>
+                        <?php } ?>
+                    </p>
+                <?php } ?>
+                <hr />
+
+                <p class="submit">
+                <input type="submit" name="Submit" class="button-primary" value="<?php esc_attr_e('Save Changes') ?>" />
+                </p>
+
+            </form>
+        </div>
+    <?php
 }
