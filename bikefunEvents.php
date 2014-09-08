@@ -834,7 +834,8 @@ function bf_newEvent() {
                     die;
             }
 
-            // You should also check filesize here. 
+            // You should also check filesize here.
+            // from http://php.net/manual/en/features.file-upload.php
             if ($_FILES[$file]['size'] > 2000000) {
                 echo json_encode( array('error'=>'Exceeded filesize limit 2MB.') );
                 die;
@@ -862,14 +863,15 @@ function bf_newEvent() {
             // On this example, obtain safe unique name from its binary data.
             if (!move_uploaded_file(
                 $_FILES[$file]['tmp_name'],
-                sprintf('./' . ($ext==="ical" ? "ical" : "thumbnails") . '/%s.%s',
+                sprintf('./uploads/%s.%s',
                     sha1_file($_FILES[$file]['tmp_name']),
                     $ext
                 )
             )) {
-                echo json_encode( array('error'=>'failed to move uploaded file.' ) );
+                echo json_encode( array('error'=>'failed to move uploaded file. tmp_name = ' . $_FILES[$file]['tmp_name'] .
+                    ", ext = " . $ext ) );
                 die;
-            }
+            } 
             
             $attach_id = media_handle_upload( $file, $post_id );
             //  attached image becomes thumbnail:

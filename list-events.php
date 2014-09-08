@@ -33,9 +33,10 @@ function events_list_short (  ) {
             _events = <?=json_encode($events)?>;
             <?php
             global $wpdb;
-            $query = $wpdb->prepare('SELECT count(*) FROM ' . $wpdb->posts .
+            $now = time() + ( get_option( 'gmt_offset' ) * 3600 );
+            $query = $wpdb->prepare('SELECT count(*) FROM ' . $wpdb->posts . ' p' .
                     ' LEFT JOIN ' . $wpdb->postmeta . " pme ON pme.post_id=p.ID AND pme.meta_key='bf_events_enddate'" .
-                    ' WHERE post_type="bf_events" AND post_status="publish" AND pme.meta_value > " . $now .', '' );
+                    ' WHERE post_type="bf_events" AND post_status="publish" AND pme.meta_value > ' . $now, array() );
             $pages = $wpdb->get_col( $query );
             $pages = floor ( ($pages[0] + 0.9999) / $rows_per_page ) + 1;
             if(!$pages) $pages = 1;
