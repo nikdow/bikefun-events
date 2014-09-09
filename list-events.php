@@ -84,7 +84,7 @@ add_shortcode('bf-events-short', 'events_list_short' );
  */
 function get_events( $first_event, $rows_per_page ){
     global $wpdb;
-    $now = time() + ( get_option( 'gmt_offset' ) * 3600 );
+    $now = time(); // no adjustment for time zone required, comparison is in UMT on both sides of the inequality
     $query = $wpdb->prepare ( 
         "SELECT p.post_title, p.ID, pms.meta_value AS startdate from " . $wpdb->posts . " p" .
         " LEFT JOIN " . $wpdb->postmeta . " pms ON pms.post_id=p.ID AND pms.meta_key='bf_events_startdate'" . 
