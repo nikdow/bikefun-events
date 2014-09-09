@@ -10,6 +10,8 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * https://code.google.com/p/ics-parser/
  */
 defined('ABSPATH') or die("No script kiddies please!");
 
