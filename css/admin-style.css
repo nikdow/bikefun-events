@@ -22,7 +22,14 @@ th#bf_col_ev_thumb {width:100px}
 .bf-meta ul li input[type=checkbox] { width: auto; margin-top: 5px; }
 .bf-meta ul li input.wide {width: 400px; }
 
-body.post-type-bf_subscription #post-body-content {
+body.post-type-bf_subscription #post-body-content .inside {
     display: none;
 }
 
+#titlediv #titlewrap label#title-prompt-text {
+    width: auto;
+    clip: auto;
+    height: auto;
+    display: block;
+    position: relative;
+}
