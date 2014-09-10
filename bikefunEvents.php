@@ -10,7 +10,45 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * https://code.google.com/p/ics-parser/
  */
+defined('ABSPATH') or die("No script kiddies please!");
+
+function event_rewrite_rules() {
+    global $wp_rewrite;
+
+    $wp_rewrite->add_rewrite_tag( '%eventyear%', '([0-9]{4})', 'bf_events_year=');
+    $wp_rewrite->add_rewrite_tag( '%eventmonth%', '([0-9]{2})', 'bf_events_month=');
+//    $wp_rewrite->add_permastruct('bf_events', '/events/%bf_events_year%/%bf_events_month%/%postname%', false);
+    add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php??post_type=bf_events&pagename=$matches[2]', 'top' );
+}
+add_action('init', 'event_rewrite_rules');
+
+add_filter('post_type_link', 'event_permalink', 10, 4);
+
+function event_permalink($permalink, $post, $leavename) {
+    if ( get_post_type( $post ) === "bf_events" ) {
+        $sd = get_post_meta( $post->ID, 'bf_events_startdate', true);
+        $year = date('Y', $sd + get_option( 'gmt_offset' ) * 3600);
+        $month = date('m', $sd + get_option( 'gmt_offset' ) * 3600);
+
+        $rewritecode = array(
+         '%eventyear%',
+         '%eventmonth%',
+         $leavename? '' : '%postname%',
+        );
+
+        $rewritereplace = array(
+         $year,
+         $month,
+         $post->post_name
+        );
+
+        $permalink = str_replace($rewritecode, $rewritereplace, $permalink);
+    }
+    return $permalink;
+}
 
 // 1. Custom Post Type Registration (Events)
 
@@ -42,14 +80,19 @@ function create_event_postype() {
         'capability_type' => 'post',
         'menu_icon' => plugins_url( 'img/calendar.gif', __FILE__ ),
         'hierarchical' => false,
-    //    'rewrite' => array( "slug" => "events" ),
-        'rewrite' => false,
-        'supports'=> array('title', 'thumbnail', 'excerpt', 'editor') ,
+        'has_archive' => 'bf_events',
+        'rewrite' => array(
+            'slug' => 'events/%eventyear%/%eventmonth%',
+            'with_front' => false
+         ),
+        'publicly_queryable' => true,
+        'query_var' => true,
+        'supports'=> array('title', 'thumbnail', 'editor', 'comments' ) ,
         'show_in_nav_menus' => true,
         'taxonomies' => array( 'tf_eventcategory', 'post_tag')
     );
 
-    register_post_type( 'tf_events', $args);
+    register_post_type( 'bf_events', $args);
  
 }
 
@@ -72,13 +115,14 @@ $labels = array(
     'choose_from_most_used' => __( 'Choose from the most used categories' ),
 );
  
-register_taxonomy('tf_eventcategory','tf_events', array(
+register_taxonomy('bf_eventcategory','bf_events', array(
     'label' => __('Event Category'),
     'labels' => $labels,
     'hierarchical' => true,
     'show_ui' => true,
     'query_var' => true,
-    'rewrite' => array( 'slug' => 'event-category' ),
+    'rewrite' => array( 'slug' => 'events',
+        'with_front'=>false),
 ));
 }
  
@@ -86,8 +130,8 @@ add_action( 'init', 'create_eventcategory_taxonomy', 0 );
 
 // 3. Show Columns
 
-add_filter ("manage_edit-tf_events_columns", "tf_events_edit_columns");
-add_action ("manage_posts_custom_column", "tf_events_custom_columns");
+add_filter ("manage_edit-bf_events_columns", "bf_events_edit_columns");
+add_action ("manage_posts_custom_column", "bf_events_custom_columns");
 
 /* Sort posts in wp_list_table by column in ascending or descending order. 
  * http://wordpress.stackexchange.com/questions/66455/how-to-change-order-of-posts-in-admin
@@ -97,10 +141,10 @@ function custom_post_order($query){
     /* The current post type. */
     $post_type = $query->get('post_type');
     /* Check post types. */
-    if($post_type==="tf_events"){
+    if($post_type==="bf_events"){
         /* Post Column: e.g. title */
         if($query->get('orderby') == ''){
-            $query->set('meta_key', 'tf_events_startdate');
+            $query->set('meta_key', 'bf_events_startdate');
             $query->set('orderby', 'meta_value');
         }
         /* Post Order: ASC / DESC */
@@ -113,22 +157,20 @@ if(is_admin()){
     add_action('pre_get_posts', 'custom_post_order');
 }
  
-function tf_events_edit_columns($columns) {
+function bf_events_edit_columns($columns) {
  
 $columns = array(
     "cb" => "<input type=\"checkbox\" />",
-    "tf_col_ev_cat" => "Category",
-    "tf_col_ev_date" => "Dates",
-    "tf_col_ev_times" => "Times",
+    "bf_col_ev_date" => "Dates",
+    "bf_col_ev_times" => "Times",
 //    "tf_col_ev_thumb" => "Thumbnail",
     "title" => "Event",
-    "tf_col_ev_desc" => "Description",
     "date" => __( 'Date' ),
     );
 return $columns;
 }
  
-function tf_events_custom_columns($column)
+function bf_events_custom_columns($column)
 {
 global $post;
 $custom = get_post_custom();
@@ -139,7 +181,7 @@ $attributes = "$class$style";
 
 switch ($column)
 {
-case "tf_col_ev_cat":
+case "bf_col_ev_cat":
     // - show taxonomy terms -
     $eventcats = get_the_terms($post->ID, "tf_eventcategory");
     $eventcats_html = array();
@@ -151,21 +193,31 @@ case "tf_col_ev_cat":
     _e('None', 'themeforce');;
     }
 break;
-case "tf_col_ev_date":
+case "bf_col_ev_date":
     // - show dates -
-    $startd = $custom["tf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $endd = $custom["tf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $startdate = date("j F Y", $startd);
-    $enddate = date("j F Y", $endd);
+    $startd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+    if( isset ($custom["bf_events_enddate"])) {
+        $endd = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+        $enddate = date("j F Y", $endd);
+    } else {
+        $enddate = "";
+    }
+    $startdate = date("D, j F Y", $startd);
+    
     echo $startdate . '<br /><em>' . $enddate . '</em>';
 break;
-case "tf_col_ev_times":
+case "bf_col_ev_times":
     // - show times -
-    $startt = $custom["tf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $endt = $custom["tf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $startt = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
     $time_format = get_option('time_format');
+    if( isset ($custom["bf_events_enddate"])) {
+        $endt = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+        $endtime = date($time_format, $endt);
+    } else {
+        $endtime = "";
+    }
     $starttime = date($time_format, $startt);
-    $endtime = date($time_format, $endt);
+    
     echo $starttime . ' - ' .$endtime;
 break;
 case 'date':
@@ -221,7 +273,7 @@ case 'date':
     }
     echo '</td>';
 break;
-case "tf_col_ev_thumb":
+case "bf_col_ev_thumb":
     // - show thumb -
     $post_image_id = get_post_thumbnail_id(get_the_ID());
     if ($post_image_id) {
@@ -234,34 +286,34 @@ case "tf_col_ev_thumb":
     echo '&h=60&w=60&zc=1" alt="" />';
 }
 break;
-case "tf_col_ev_desc";
-    the_excerpt();
-break;
- 
 }
 }
 
 // 4. Show Meta-Box
  
-add_action( 'admin_init', 'tf_events_create' );
+add_action( 'admin_init', 'bf_events_create' );
  
-function tf_events_create() {
-    add_meta_box('tf_events_meta', 'Events', 'tf_events_meta', 'tf_events');
+function bf_events_create() {
+    add_meta_box('bf_events_meta', 'Events', 'bf_events_meta', 'bf_events');
 }
  
-function tf_events_meta () {
+function bf_events_meta () {
  
     // - grab data -
 
     global $post;
     $custom = get_post_custom($post->ID);
-    $meta_sd = $custom["tf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $meta_ed = $custom["tf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $meta_ed = isset ( $custom["bf_events_enddate"] ) ? $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600 : 0;
     $meta_st = $meta_sd;
     $meta_et = $meta_ed;
-    $meta_email = $custom["tf_events_email"][0];
-    $meta_place = $custom["tf_events_place"][0];
-    $meta_url = $custom["tf_events_url"][0];
+    $meta_email = $custom["bf_events_email"][0];
+    $meta_place = $custom["bf_events_place"][0];
+    $meta_url = $custom["bf_events_url"][0];
+    $meta_campaign_iCalNative = $custom["iCalNative"][0];
+    $meta_campaign_iCalEmbed = $custom["iCalEmbed"][0];
+    $meta_image = $custom["bf_events_image"][0];
+    $meta_pending_description = $custom["bf_pending_description"][0];
 
     // - grab wp time format -
 
@@ -270,32 +322,46 @@ function tf_events_meta () {
 
     // - populate today if empty, 00:00 for time -
 
-    if ($meta_sd == null) { $meta_sd = time(); $meta_ed = $meta_sd; $meta_st = 0; $meta_et = 0;}
+    if ($custom["bf_events_startdate"][0] == null) { $meta_sd = time(); $meta_ed = $meta_sd; $meta_st = 0; $meta_et = 0;}
 
     // - convert to pretty formats -
 
     $clean_sd = date("D, d M Y", $meta_sd);
-    $clean_ed = date("D, d M Y", $meta_ed);
     $clean_st = date($time_format, $meta_st);
-    $clean_et = date($time_format, $meta_et);
+    if ( $meta_ed ) {
+        $clean_ed = date("D, d M Y", $meta_ed);
+        $clean_et = date($time_format, $meta_et);
+    } else {
+        $clean_ed = "";
+        $clean_et = "";
+    }
 
     // - security -
 
-    echo '<input type="hidden" name="tf-events-nonce" id="tf-events-nonce" value="' .
+    echo '<input type="hidden" name="bf-events-nonce" id="bf-events-nonce" value="' .
     wp_create_nonce( 'tf-events-nonce' ) . '" />';
 
     // - output -
 
     ?>
-    <div class="tf-meta">
+    <div class="bf-meta">
     <ul>
-        <li><label>Start Date</label><input name="tf_events_startdate" class="tfdate" value="<?php echo $clean_sd; ?>" /></li>
-        <li><label>Start Time</label><input name="tf_events_starttime" value="<?php echo $clean_st; ?>" /><em>Use 24h format (7pm = 19:00)</em></li>
-        <li><label>End Date</label><input name="tf_events_enddate" class="tfdate" value="<?php echo $clean_ed; ?>" /></li>
-        <li><label>End Time</label><input name="tf_events_endtime" value="<?php echo $clean_et; ?>" /><em>Use 24h format (7pm = 19:00)</em></li>
-        <li><label>Your Email</label><input type="email" name="tf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
-        <li><label>Meeting Place</label><input class="wide" name="tf_events_place" value="<?php echo $meta_place; ?>" /></li>
-        <li><label>Web Page</label><input class="wide" type="url" name="tf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
+        <?php if( $meta_pending_description ) {?>
+            <li class='tall'><label>Revised description awaiting approval</label>
+                <?php wp_editor( $meta_pending_description, "editcontent", array("media_buttons"=>false, "textarea_name"=>"bf_pending_description" ) ); ?></li>
+            </li>
+        <?php } ?>
+        <li><label>Start Date</label><input name="bf_events_startdate" class="bfdate" value="<?php echo $clean_sd; ?>" /></li>
+        <li><label>Start Time</label><input name="bf_events_starttime" value="<?php echo $clean_st; ?>" /><em>Use 24h format (7pm = 19:00)</em></li>
+        <li><label>End Date</label><input name="bf_events_enddate" class="bfdate" value="<?php echo $clean_ed; ?>" /></li>
+        <li><label>End Time</label><input name="bf_events_endtime" value="<?php echo $clean_et; ?>" /><em>Use 24h format (7pm = 19:00)</em></li>
+        <li><label>Your Email</label><input type="email" name="bf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
+        <li><label>Meeting Place</label><input class="wide" name="bf_events_place" value="<?php echo $meta_place; ?>" /></li>
+        <li><label>Web Page</label><input class="wide" type="url" name="bf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
+        <li><label>Image imported</label><input class="wide" type="url" name="bf_events_image" value="<?=$meta_image?>" /></li>
+        <li><label><b>iCal downloads</b></label></li>
+        <li><label>from this site</label><?=$meta_campaign_iCalNative?></li>
+        <li><label>via embedding</label><?=$meta_campaign_iCalEmbed?></li>
     </ul>
     </div>
     <?php
@@ -303,15 +369,15 @@ function tf_events_meta () {
 
 // 5. Save Data
  
-add_action ('save_post', 'save_tf_events');
+add_action ('save_post', 'save_bf_events');
  
-function save_tf_events(){
+function save_bf_events(){
  
     global $post;
 
     // - still require nonce
 
-    if (  isset( $_POST['tf-events-nonce'] ) && !wp_verify_nonce( $_POST['tf-events-nonce'], 'tf-events-nonce' )) {
+    if (  isset( $_POST['bf-events-nonce'] ) && !wp_verify_nonce( $_POST['bf-events-nonce'], 'tf-events-nonce' )) {
         return $post->ID;
     }
 
@@ -320,22 +386,31 @@ function save_tf_events(){
 
     // - convert back to unix & update post
 
-    if(!isset($_POST["tf_events_startdate"])):
+    if(!isset($_POST["bf_events_startdate"])):
         return $post;
     endif;
-    $updatestartd = strtotime ( $_POST["tf_events_startdate"] . $_POST["tf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
-    update_post_meta($post->ID, "tf_events_startdate", $updatestartd );
+    $updatestartd = strtotime ( $_POST["bf_events_startdate"] . $_POST["bf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
+    update_post_meta($post->ID, "bf_events_startdate", $updatestartd );
+    update_post_meta($post->ID, "bf_events_year", date("Y", $updatestartd ) );
+    update_post_meta($post->ID, "bf_events_month", date("m", $updatestartd ) );
 
-    if( ! isset( $_POST[ "tf_events_enddate" ] ) ) :
+    if( ! isset( $_POST[ "bf_events_enddate" ] ) ) :
         return $post;
     endif;
     
-    $updateendd = strtotime ( $_POST["tf_events_enddate"] . $_POST["tf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
-    update_post_meta($post->ID, "tf_events_enddate", $updateendd );
+    $updateendd = strtotime ( $_POST["bf_events_enddate"] . $_POST["bf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
+    update_post_meta($post->ID, "bf_events_enddate", $updateendd );
+    if ( isset( $_POST[ "bf_pending_description"] ) ) {
+        if ( $_POST[ "bf_pending_description" ] == "" ) {
+            delete_post_meta($post->ID, 'bf_pending_description' );
+        } else {
+            update_post_meta( $post->ID, "bf_pending_description", $_POST[ "bf_pending_description"] );
+        }
+    }
     
-    update_post_meta($post->ID, "tf_events_email", $_POST["tf_events_email"] );
-    update_post_meta($post->ID, "tf_events_place", $_POST["tf_events_place"] );
-    update_post_meta($post->ID, "tf_events_url", $_POST["tf_events_url"] );
+    update_post_meta($post->ID, "bf_events_email", $_POST["bf_events_email"] );
+    update_post_meta($post->ID, "bf_events_place", $_POST["bf_events_place"] );
+    update_post_meta($post->ID, "bf_events_url", $_POST["bf_events_url"] );
     
 }
 
@@ -347,7 +422,7 @@ function events_updated_messages( $messages ) {
  
   global $post, $post_ID;
  
-  $messages['tf_events'] = array(
+  $messages['bf_events'] = array(
     0 => '', // Unused. Messages start at index 1.
     1 => sprintf( __('Event updated. <a href="%s">View item</a>'), esc_url( get_permalink($post_ID) ) ),
     2 => __('Custom field updated.'),
@@ -371,14 +446,14 @@ function events_updated_messages( $messages ) {
 
 function events_styles() {
     global $post_type;
-    if( 'tf_events' != $post_type )
+    if( 'bf_events' != $post_type )
         return;
     wp_enqueue_style('ui-datepicker', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css');
 }
  
 function events_scripts() {
     global $post_type;
-    if( 'tf_events' != $post_type )
+    if( 'bf_events' !== $post_type )
         return;
     wp_enqueue_script('jquery-ui', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js', array( 'jquery') );
 //    wp_enqueue_script('ui-datepicker', '//ajax.googleapis.com/ajax/libs/jqueryui/1.8.14/jquery-ui.min.js', array( 'jquery', 'jquery-ui' ) );
@@ -394,7 +469,9 @@ add_action( 'admin_print_scripts-post.php', 'events_scripts', 1000 );
 add_action( 'admin_print_scripts-post-new.php', 'events_scripts', 1000 );
 
 function scripts() {
-    wp_enqueue_script('ui', plugins_url( 'js/ui.js', __FILE__ ), array( 'jquery' ) );
+    wp_register_script('ui', plugins_url( 'js/ui.js', __FILE__ ), array( 'jquery' ) );
+    wp_localize_script('ui', 'data', array('ajaxurl'=>admin_url('admin-ajax.php') ) );
+    wp_enqueue_script('ui');
     wp_enqueue_style('event-style', plugins_url( 'style.css', __FILE__ ) );
 }
 add_action( 'wp_enqueue_scripts', 'scripts' );
@@ -414,9 +491,11 @@ add_action('admin_init', 'add_admin_styles' );
  */
 
 // 1) FULL EVENTS
+// NB - this code is not used.  Instead, see the included file list-events.php 
+// which presents a paginated list of events in a more compact format - ngd - 1/9/2014
 //***********************************************************************************
 
-function tf_events_full ( $atts ) {
+function bf_events_full ( $atts ) {
 
 // - define arguments -
 extract(shortcode_atts(array(
@@ -440,9 +519,9 @@ $querystr = "
     SELECT *
     FROM $wpdb->posts wposts, $wpdb->postmeta metastart, $wpdb->postmeta metaend
     WHERE (wposts.ID = metastart.post_id AND wposts.ID = metaend.post_id)
-    AND (metaend.meta_key = 'tf_events_enddate' AND metaend.meta_value > $now )
-    AND metastart.meta_key = 'tf_events_startdate'
-    AND wposts.post_type = 'tf_events'
+    AND (metaend.meta_key = 'bf_events_enddate' AND metaend.meta_value > $now )
+    AND metastart.meta_key = 'bf_events_startdate'
+    AND wposts.post_type = 'bf_events'
     AND wposts.post_status = 'publish'
     ORDER BY metastart.meta_value ASC LIMIT $limit
  ";
@@ -460,8 +539,8 @@ setup_postdata($post);
 
 // - custom variables -
 $custom = get_post_custom(get_the_ID());
-$sd = $custom["tf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-$ed = $custom["tf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+$sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+$ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
 
 // - determine if it's a new day -
 $longdate = date("l, F j, Y", $sd);
@@ -479,9 +558,9 @@ $etime = date($time_format, $ed);
         <div class="title">
             <div class="eventtext"><?php the_title(); ?></div>
             <div class="time"><?php echo $stime . ' - ' . $etime; ?></div>
-            <div class="time">Meet at: <?php echo $custom["tf_events_place"][0]?></div>
-            <?php if($custom["tf_events_url"][0] !== "" ) { ?>
-            <div class="time"><a href="<?php echo $custom["tf_events_url"][0]?>" target="_blank">Web page</a></div>
+            <div class="time">Meet at: <?php echo $custom["bf_events_place"][0]?></div>
+            <?php if($custom["bf_events_url"][0] !== "" ) { ?>
+            <div class="time"><a href="<?php echo $custom["bf_events_url"][0]?>" target="_blank">Web page</a></div>
             <?php }
             if( current_user_can( 'edit_posts' ) ) {
                 echo "<span class='edit-link'>\n";
@@ -500,6 +579,7 @@ endforeach;
 else :
 endif;
 
+
 // ===== RETURN: FULL EVENTS SECTION =====
 
 $output = ob_get_contents();
@@ -507,7 +587,7 @@ ob_end_clean();
 return $output;
 }
 
-add_shortcode('tf-events-full', 'tf_events_full'); // You can now call this shortcode with [tf-events-full limit='20']
+add_shortcode('bf-events-full', 'bf_events_full'); // You can now call this shortcode with [bf-events-full limit='20']
 
 /*
  * Add event details before the body of the post
@@ -515,29 +595,43 @@ add_shortcode('tf-events-full', 'tf_events_full'); // You can now call this shor
 
 function event_details($content) {
     global $post;
-    if($post->post_type !== 'tf_events' ) return $content;
+    if($post->post_type !== 'bf_events' ) return $content;
     
     $output = "";
-    $sd = get_post_meta( $post->ID, 'tf_events_startdate', true);
-    $ed = get_post_meta( $post->ID, 'tf_events_enddate', true);
+    $sd = get_post_meta( $post->ID, 'bf_events_startdate', true);
+    $ed = get_post_meta( $post->ID, 'bf_events_enddate', true);
     $time_format = get_option('time_format');
     $stime = date($time_format, $sd + get_option( 'gmt_offset' ) * 3600);
-    $etime = date($time_format, $ed + get_option( 'gmt_offset' ) * 3600);
+    if( $ed ) $etime = date($time_format, $ed + get_option( 'gmt_offset' ) * 3600);
     $startout = date("l, F j, Y", $sd + get_option( 'gmt_offset' ) * 3600 );
-    $endout = date("l, F j, Y", $ed + get_option( 'gmt_offset' ) * 3600 );
+    if ( $ed ) $endout = date("l, F j, Y", $ed + get_option( 'gmt_offset' ) * 3600 );
     $output .= "<div>Start: " . $startout . " " . $stime . "</div>";
-    $output .= "<div>Finish: " . ($endout===$startout ? "" : $endout . " ") . $etime . "</div>";
-    $output .= "<div>Meet at: " . get_post_meta( $post->ID, 'tf_events_place', true ) . "</div>";
-    $url = get_post_meta( $post->ID, 'tf_events_url', true);
+    if ( $ed ) $output .= "<div>Finish: " . ($endout===$startout ? "" : $endout . " ") . $etime . "</div>";
+    $output .= "<div>Meet at: " . get_post_meta( $post->ID, 'bf_events_place', true ) . "</div>";
+    $url = get_post_meta( $post->ID, 'bf_events_url', true);
     if( $url ) $output .= "<div>More information: <a href='" . $url . "' target='_blank'>" . $url . "</a></div>";
     $postput = "";
-    $postput .= "<div>iCal download  - coming soon</div>";
+    $postput .= "<div><img class='right-margin' src='" . plugins_url( 'img/cal.jpg' , __FILE__ ) . "' border='0'/><a href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalNative'>Add to your calendar</a></div>";
+    $postput .= "<div id=\"embedCalCode\">" .
+        "Want people to put this event in their calendar? <span id=\"embedClick\">Click here</span> for embed code for your website." . 
+        "</div>" .
+        "<div id=\"embedCode\" class=\"removed\">" .
+        "<input name=\"embedCode\" id=\"embedCodeField\" value=\"<a href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalEmbed'>" .
+        "<img border='0' src='" . plugins_url( 'img/cal.jpg', __FILE__ ) . "'/> Add to your calendar: " . $post->post_title . "</a>\" />" .
+        "</div>";
+    $postput .= "<div class='bf_overline'>";
+    $postput .= "If you listed this event, we sent you an email with a link that allows you to update it.<br/>";
+    $postput .= "If you want to edit this event but you don't have that email handy, <a href='#' onClick='newSecret(\"" . $post->ID . "\")'>click here</a> for a replacement email.<br/>";
+    $postput .= "Note that each email supercedes the link in all preceding emails, only the most recent link will work.";
+    $postput .= "<div id='returnMessage'></div>";
     $now = time();
     if( $ed < $now ) {
         $output .= "<h2>Warning - you are viewing a past event</h2>";
+    } else {
+        $output .= "<br/>";
     }
     return $output . $content . $postput;
-}
+    }
 add_filter( 'the_content', 'event_details' );
 
 /*
@@ -551,13 +645,13 @@ remove_all_actions( 'do_feed_rss2' );
 add_action( 'do_feed_rss2', 'events_feed_rss2', 10, 1 );
 function events_feed_rss2( ) {
     $rss_template = plugin_dir_path( __FILE__ ) . 'feed-rss2.php';
-    if( get_query_var( 'post_type' ) == 'tf_events' and file_exists( $rss_template ) )
+    if( get_query_var( 'post_type' ) == 'bf_events' and file_exists( $rss_template ) )
         load_template( $rss_template );
 }
 
 function myfeed_request($qv) {
     if (isset($qv['feed'])) {
-        $qv['post_type'] = "tf_events";
+        $qv['post_type'] = "bf_events";
     }
     return $qv;
 }
@@ -590,7 +684,7 @@ class Events_RSS extends WP_Widget {
 		echo $before_widget;
                     
                 ?>
-                <a href="<?=bloginfo('rss2_url') . "&post_type=tf_events";?>"><?=$title?></a>
+                <a href="<?=bloginfo('rss2_url') . "&post_type=bf_events";?>"><?=$title?></a>
                 <?php
                 
                 echo $after_widget;
@@ -618,72 +712,209 @@ class Events_RSS extends WP_Widget {
 add_action( 'wp_ajax_newEvent', 'bf_newEvent' );
 add_action( 'wp_ajax_nopriv_newEvent', 'bf_newEvent' );
 
+add_action('wp_print_scripts','include_jquery_form_plugin');
+function include_jquery_form_plugin(){
+    global $post;
+    if ($post->post_title === "List Your Event") { // only add this on the page that allows the upload
+        wp_enqueue_script( 'jquery' );
+        wp_enqueue_script( 'jquery-form',array('jquery'),false,true ); 
+    }
+}
+
 function bf_newEvent() {
+    /*
+     * Is this an edit of an already-submitted event? 
+     * can be done via the postmeta bf_events_secret 
+     */
+    
+    $existing = false;
+    if ( isset( $_POST['bf_events_secret']) && $_POST['bf_events_secret']!=="" ) {
+        $existing = true;
+        $bf_events_secret = $_POST["bf_events_secret"];
+        $post_id = $_POST["post_id"];
+        global $wpdb;
+        $query = $wpdb->prepare( "SELECT * FROM " . $wpdb->posts . " p LEFT JOIN " . $wpdb->postmeta . " m ON p.ID=m.post_id" .
+                " WHERE m.meta_key='bf_events_secret' AND m.meta_value='%s' AND p.ID='%s'", $bf_events_secret, $post_id );
+        $post = $wpdb->get_row( $query, OBJECT );
+        if ( ! $post ) {
+            echo json_encode( array( 'error'=>'Sorry, something has gone wrong, it appears you were editing an existing event, but we couldn\'t find that event.' ) );
+            die;
+        }
+    }
+    
     $title = $_POST['title'];
-    $tf_events_email = $_POST['tf_events_email'];
-    $tf_events_place = $_POST['tf_events_place'];
-    $tf_events_url = $_POST['tf_events_url'];
-    $tf_description = $_POST['tf_description'];
+    $bf_events_email = $_POST['bf_events_email'];
+    $bf_events_place = $_POST['bf_events_place'];
+    $bf_events_url = $_POST['bf_events_url'];
+    if ( $existing ) {
+        $bf_pending_description = $_POST['bf_description'];
+    } else {
+        $bf_description = $_POST['bf_description'];
+    }
+    
+    require_once(ABSPATH . "wp-admin" . '/includes/image.php');
+    require_once(ABSPATH . "wp-admin" . '/includes/file.php');
+    require_once(ABSPATH . "wp-admin" . '/includes/media.php');
    
     $areYouThere = $_POST['areYouThere'];
     if (
-        ! isset( $_POST['fs_nonce'] ) 
-        || ! wp_verify_nonce( $_POST['fs_nonce'], 'bf_new_event' ) 
+        ! isset( $_POST['bf_nonce'] ) 
+        || ! wp_verify_nonce( $_POST['bf_nonce'], 'bf_new_event' ) 
     ) {
 
        echo json_encode( array( 'error'=>'Sorry, your nonce did not verify.' ) );
        die;
     }
     
-    if($tf_events_email==="") {
+    if($bf_events_email==="") {
         echo json_encode( array( 'error'=>'Please supply an email address' ) );
         die;
     }
     global $wpdb;
     
-    if( $areYouThere !== "y" ) {
+    if( $areYouThere !== "y" && ! $existing ) {
         echo json_encode( array('error'=>'Please tick the box to show you are not a robot') );
         die;
     }
         
-    $post_id = wp_insert_post(array(
-            'post_title'=>$title,
-            'post_status'=>'draft',
-            'post_type'=>'tf_events',
-            'ping_status'=>false,
-            'post_content'=>$tf_description,
-        ),
-        true
-    );
+    if ( $existing ) {
+        $new_post = array (
+            'ID' => $post_id,
+            'post_title' => $title,
+        );
+        $post_id = wp_update_post( $new_post, true );
+        update_post_meta($post_id, 'bf_pending_description', $bf_pending_description );
+    } else {
+        $post_id = wp_insert_post(array(
+                'post_title'=>$title,
+                'post_status'=>'draft',
+                'post_type'=>'bf_events',
+                'ping_status'=>false,
+                'post_content'=>$bf_description,
+            ),
+            true
+        );
+    }
     if(is_wp_error($post_id)) {
         echo json_encode( array( 'error'=>$post_id->get_error_message() ) );
         die;
     }
-    $updatestartd = strtotime ( $_POST["tf_events_startdate"] . $_POST["tf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
-    update_post_meta($post->ID, "tf_events_startdate", $updatestartd );
+    $updatestartd = strtotime ( $_POST["bf_events_startdate"] . $_POST["bf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
+    update_post_meta($post_id, "bf_events_startdate", $updatestartd );
+    update_post_meta($post_id, "bf_events_year", date("m", $updatestartd ) );
+    update_post_meta($post_id, "bf_events_month", date("Y", $updatestartd ) );
 
-    if( isset( $_POST[ "tf_events_enddate" ] ) ) :
-        $updateendd = strtotime ( $_POST["tf_events_enddate"] . $_POST["tf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
-        update_post_meta($post->ID, "tf_events_enddate", $updateendd );
+    if( isset( $_POST[ "bf_events_enddate" ] ) ) :
+        $updateendd = strtotime ( $_POST["bf_events_enddate"] . $_POST["bf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
+        update_post_meta($post_id, "bf_events_enddate", $updateendd );
     endif;
    
-    update_post_meta($post->ID, "tf_events_email", $_POST["tf_events_email"] );
-    update_post_meta($post->ID, "tf_events_place", $_POST["tf_events_place"] );
-    update_post_meta($post->ID, "tf_events_url", $_POST["tf_events_url"] );
-        
-    $secret = generateRandomString();
-    update_post_meta ( $post_id, "tf_events_secret", $secret );
+    update_post_meta($post_id, "bf_events_email", $bf_events_email );
+    update_post_meta($post_id, "bf_events_place", $bf_events_place );
+    update_post_meta($post_id, "bf_events_url", $bf_events_url );
+     
+    if ($_FILES) {
+        foreach ($_FILES as $file => $array) {
+            
+            if ( !isset($_FILES[$file]['error']) || is_array($_FILES[$file]['error']) ) {
+                echo json_encode( array('error'=>'Invalid upload parameters' ) );
+                die;
+            }
+            
+            switch ($_FILES[$file]['error']) {
+                case UPLOAD_ERR_OK:
+                    break;
+                case UPLOAD_ERR_NO_FILE:
+                    echo json_encode( array('error'=>'No file sent.') );
+                    die;
+                case UPLOAD_ERR_INI_SIZE:
+                case UPLOAD_ERR_FORM_SIZE:
+                    echo json_encode( array('error'=>'Exceeded filesize limit.') );
+                    die;
+                default:
+                    echo json_encode( array('error'=>'Unknown errors.') );
+                    die;
+            }
 
-    $subject = "Thanks for listing with Bikefun"; // use blog title in subject!
-    $headers = array();
-    $headers[] = 'From: Bikefun <info@bikefun.org>';
-    $headers[] = "Content-type: text/html";
-    $message = "<P>Thanks for listing with Bikefun. Your event will be visible once a moderator has approved it.</P>";
-    $message .= "<P>Below is a link you can use to edit the event you have listed.</P>";
-    $message .= "<P><a href='http://www.freestylecyclists.org/confirm?secret=" . $secret . "'>Click here to edit your event</a></P>";
-    wp_mail( $fs_signature_email, $subject, $message, $headers );
+            // You should also check filesize here.
+            // from http://php.net/manual/en/features.file-upload.php
+            if ($_FILES[$file]['size'] > 2000000) {
+                echo json_encode( array('error'=>'Exceeded filesize limit 2MB.') );
+                die;
+            }
+            
+            // DO NOT TRUST $_FILES['upfile']['mime'] VALUE !!
+            // Check MIME Type by yourself.
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            if (false === $ext = array_search(
+                $finfo->file($_FILES[$file]['tmp_name']),
+                array(
+                    'jpg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'gif' => 'image/gif',
+                    'ical' => 'text/calendar'
+                ),
+                true
+            )) {
+                echo json_encode( array('error'=>'incorrect file type') );
+                die;
+            }
+            
+            // You should name it uniquely.
+            // DO NOT USE $_FILES['upfile']['name'] WITHOUT ANY VALIDATION !!
+            // On this example, obtain safe unique name from its binary data.
+/*            if (!move_uploaded_file(
+                $_FILES[$file]['tmp_name'],
+                sprintf('./uploads/%s.%s',
+                    sha1_file($_FILES[$file]['tmp_name']),
+                    $ext
+                )
+            )) {
+                echo json_encode( array('error'=>'failed to move uploaded file. tmp_name = ' . $_FILES[$file]['tmp_name'] .
+                    ", ext = " . $ext ) );
+                die;
+            } */
+            
+            $attach_id = media_handle_upload( $file, $post_id );
+            //  attached image becomes thumbnail:
+            update_post_meta($post_id,'_thumbnail_id',$attach_id);
+        }   
+    }
     
-    echo json_encode( array( 'success'=>'You have successfully registered your support. Look for an email from us and click on the link to confirm your email address - until then we can\'t count you.' ) );
+    $secret = generateRandomString();
+    update_post_meta ( $post_id, "bf_events_secret", $secret );
+    /*
+     * mail to submitter
+     */
+    $subject = $existing ? "Your update is now live" : "Thanks for listing with Bikefun"; // use blog title in subject!
+    $headers = array();
+    $headers[] = 'From: Bikefun <moderator@bikefun.org>';
+    $headers[] = "Content-type: text/html";
+    $message = "<P>Thanks for " . ($existing ? "updating your " : "") . "listing with Bikefun. ";
+    if ( $existing ) {
+        $message .= "Your event has been updated, except for the description field, which requires moderation.";
+    } else {
+        $message .= "Your event will be visible once a moderator has approved it.</P>";
+    }
+    $message .= "<P>Below is a " . ($existing ? "new " : "") . "link you can use to edit the event you have listed.</P>";
+    $message .= "<P><a href='" . get_site_url() . "/list-your-event/?secret=" . $secret . "'>Click here to edit your event</a></P>";
+    $message .= "<P>Note the secret key in the link above only works once, but we send you a new email like this one each time, with a new secret in it.";
+    wp_mail( $bf_events_email, $subject, $message, $headers );
+    /*
+     * mail to moderator
+     */
+    $subject = $existing ? "request to update existing event description" : "New listing request";
+    $headers = array();
+    $headers[] = 'From: Bikefun <moderator@bikefun.org>';
+    $headers[] = "Content-type: text/html";
+    $message = $existing ? 
+            "A request has been made to update the description of an event." :
+            "A new listing has been submitted for your approval.";
+    $message .= "<P><a href='" . get_site_url() . "/wp-admin/post.php?post=" . $post_id . "&action=edit' target='_blank'>Click here to approve it</a>.</P>";
+    $recipient_option = get_option('event-moderator-email');
+    wp_mail ( $recipient_option, $subject, $message, $headers );
+    
+    echo json_encode( array( 'success'=>'Thanks for ' . ($existing ? "updating your " : "") . "listing with Bikefun. Look for " . ($existing ? "a new " : "an ") . "email from us with a link that allows you to edit your event." ) );
     die();
 }
 /*
@@ -704,7 +935,7 @@ function register_event_script() {
     wp_register_script('jquery-ui', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js', array( 'jquery') );
     wp_register_style('ui-datepicker', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css');
     wp_register_script('event', plugins_url( 'js/event.js' , __FILE__ ), array('jquery', 'jquery-ui' ) );
-    wp_register_style(' bf-event_styles', plugins_url( 'css/style.css', __FILE__ ) );	
+    wp_register_style('bf-event_styles', plugins_url( 'css/style.css', __FILE__ ) );	
 }
 function enqueue_event_register_script() {	// support for signup form, which appears on two pages and in a popup
     global $add_event_register_script;
@@ -713,7 +944,7 @@ function enqueue_event_register_script() {	// support for signup form, which app
     wp_enqueue_style('ui-datepicker');
     wp_localize_script('event', 'data', array('stylesheetUri' => plugin_dir_url( __FILE__ ), 'ajaxUrl'=> admin_url('admin-ajax.php') ) );
     wp_enqueue_script('event');
-    wp_enqueue_style(' bf-event_styles');
+    wp_enqueue_style('bf-event_styles');
 }
 add_action('init', 'register_event_script' );
 add_action( 'wp_footer', 'enqueue_event_register_script' );
@@ -727,30 +958,262 @@ function bf_event_register ( $atts ) {
     ), $atts );
     $narrow = $a['narrow']==='1';
     $popup = $a['popup']==='1';
+    $clean_sd = date("D, j F Y");
+    $clean_ed = date("D, j F Y");
+    
+    if ( isset ( $_GET["secret"] ) ) {
+        $bf_events_secret = $_GET["secret"];
+        global $wpdb;
+        $query = $wpdb->prepare( "SELECT * FROM " . $wpdb->posts . " p LEFT JOIN " . $wpdb->postmeta . " m ON p.ID=m.post_id" .
+                " WHERE m.meta_key='bf_events_secret' AND m.meta_value='%s'", $bf_events_secret );
+        $post = $wpdb->get_row( $query, OBJECT );
+        if ( ! $post ) {
+            echo "Sorry, the secret in your link is incorrect or outdated.<br/>" .
+                    "Remember, the link we send you in an email only works once.";
+            exit;
+        }
+        $post_id = $post->ID;
+        $custom = get_post_custom( $post_id );
+        $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+        $meta_ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+        $clean_sd = date("D, j F Y", $meta_sd );
+        $clean_ed = date("D, j F Y", $meta_ed );
+        $clean_st = date("g:i a", $meta_sd );
+        $clean_et = date("g:i a", $meta_ed );
+        $meta_email = $custom["bf_events_email"][0];
+        $meta_place = $custom["bf_events_place"][0];
+        $meta_url = $custom["bf_events_url"][0];
+        $bf_pending_description = $custom["bf_pending_description"][0];
+        if ( $bf_pending_description ) {
+            $content = $bf_pending_description;
+        } else {
+            $content = $post->post_content;        
+        }
+    } else {
+        $content = $post->post_content;
+    }
+    
     
     ob_start() ?>
 
-    <form name="register<?=($popup ? "_popup" : "");?>">
-        <div class="tf-meta">
+    <form id="register" name="register" method="post" action="#" enctype="multipart/form-data">
+        <div class="bf-meta">
             <ul>            
-                <li><label>Event title</label><input <?=($narrow || $popup) ? " class='smallinput'" : "class='wide'";?> type="text" name="title" id="name<?=($popup ? "_popup" : "");?>"></li>
-                <li><label>Start Date</label><input name="tf_events_startdate" class="tfdate" value="<?php echo $clean_sd; ?>" /></li>
-                <li><label>Start Time</label><input name="tf_events_starttime" value="<?php echo $clean_st; ?>" /></li>
-                <li><label>End Date</label><input name="tf_events_enddate" class="tfdate" value="<?php echo $clean_ed; ?>" /></li>
-                <li><label>End Time</label><input name="tf_events_endtime" value="<?php echo $clean_et; ?>" /></li>
-                <li><label>Your Email</label><input type="email" id="email" name="tf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
-                <li><label>Meeting Place</label><input class="wide" name="tf_events_place" value="<?php echo $meta_place; ?>" /></li>
-                <li><label>Web Page</label><input type="url" name="tf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
+                <li><label>Event title</label><input class='wide' type="text" name="title" id="name" value='<?=$post->post_title?>'></li>
+                <li><label>Start Date</label><input name="bf_events_startdate" class="bfdate" value="<?php echo $clean_sd; ?>" /></li>
+                <li><label>Start Time</label><input name="bf_events_starttime" value="<?=$clean_st?>" /></li>
+                <li><label>End Date</label><input name="bf_events_enddate" class="bfdate" value="<?php echo $clean_ed; ?>" /></li>
+                <li><label>End Time</label><input name="bf_events_endtime" value="<?=$clean_et?>" /></li>
+                <li><label>Your Email</label><input type="email" id="email" name="bf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
+                <li><label>Meeting Place</label><input class="wide" name="bf_events_place" value="<?php echo $meta_place; ?>" /></li>
+                <li><label>Web Page</label><input type="url" name="bf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
+                <li><label>Upload image</label><input type="file" name="thumbnail" id="thumbnail"></li>
                 <li><label>Description</label></li>
-                <li class="tall"><?php wp_editor( "&nbsp;", "editcontent", array("media_buttons"=>false, "textarea_name"=>"tf_description" ) ); ?></li>
-                <li><input id="simpleTuring<?=($popup ? "_popup" : "");?>" name="areYouThere" type="checkbox" value="y" class="inputc"></td><td class="medfont">Tick this box to show you are not a robot</li>
-                <li><button type="button" id="saveButton<?=($popup ? "_popup" : "");?>">Save</button></li>
-                <li><div id="ajax-loading<?=($popup ? "_popup" : "");?>" class="farleft"><img src="<?php echo get_site_url();?>/wp-includes/js/thickbox/loadingAnimation.gif"></div></li>
-                <li><div id="returnMessage<?=($popup ? "_popup" : "");?>"></div></li>
+                <li class="tall"><?php wp_editor( $content, "editcontent", array("media_buttons"=>false, "textarea_name"=>"bf_description" ) ); ?></li>
+                <?php if( ! $post ) { ?>
+                    <li><input id="simpleTuring" name="areYouThere" type="checkbox" value="y" class="inputc"></td><td class="medfont">Tick this box to show you are not a robot</li>
+                <?php } ?>
+                <li><button type="button" id="saveButton" value="Send">submit</button></li>
+                <li><div id="ajax-loading" class="farleft"><img src="<?php echo get_site_url();?>/wp-includes/js/thickbox/loadingAnimation.gif"></div></li>
+                <li><div id="returnMessage"></div></li>
             </ul> 
-        <input name="action" value="newEvent" type="hidden">
-        <?php wp_nonce_field( "bf_new_event", "fs_nonce");?>
+            <input name="action" value="newEvent" type="hidden">
+            <?php if ( $post ) { ?>
+                <input name='post_id' value='<?=$post->ID?>' type="hidden" />
+                <input name='bf_events_secret' value='<?=$bf_events_secret?>' type='hidden' />
+            <?php } ?>
+            <?php wp_nonce_field( "bf_new_event", "bf_nonce");?>
+        </div>
     </form>
 <?php return ob_get_clean();
 }
 add_shortcode('event', bf_event_register );
+
+add_action( 'wp_ajax_nopriv_sendSecret', 'bf_sendSecret' );
+
+function bf_sendSecret() {
+    $post_id = $_POST['post_id'];
+    
+    $post = get_post( $post_id, 'OBJECT' );
+    if ( ! $post ) {
+        echo json_encode( array( 'error'=>'Failed to find the post ' . $post_id . ', no email sent' ) );
+        die;
+    }
+    $bf_events_email = get_post_meta( $post_id, 'bf_events_email', true );
+    if ( ! $bf_events_email ) {
+        echo json_encode ( array( 'error'=>'Couldn\'t find an email address to send to.' ) );
+        die;
+    }
+    $secret = generateRandomString();
+    update_post_meta ( $post_id, "bf_events_secret", $secret );
+    
+    $subject = "New link to edit your Bikefun event";
+    $headers = array();
+    $headers[] = 'From: Bikefun <moderator@bikefun.org>';
+    $headers[] = "Content-type: text/html";
+    $message .= "<P>Here is your new link which you can use to edit the event you have listed.</P>";
+    $message .= "<P><a href='http://www.bikefun.org/list-your-event/?secret=" . $secret . "'>Click here to edit your event</a></P>";
+    $message .= "<P>Note the secret key in the link above only works once, but we send you a new email like this one each time, with a new secret in it.";
+    wp_mail( $bf_events_email, $subject, $message, $headers );
+}
+/*
+ * iCal file
+ */
+if (isset($_REQUEST['iCal'])) {
+
+    add_action('init', 'bf_iCal');
+
+}
+
+function bf_iCal() {
+    $post_id = $_REQUEST['p'];
+    $campaign = $_REQUEST['campaign'];
+    $post = get_post( $post_id, 'OBJECT' );
+    $custom = get_post_custom( $post_id );
+    $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $meta_ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $meta_email = $custom["bf_events_email"][0];
+    $meta_place = $custom["bf_events_place"][0];
+    $meta_url = $custom["bf_events_url"][0];
+    
+    if( $campaign ) {
+        $before = $custom[$campaign ][0];
+        if( ! $before ) $before = 0;
+        $before++;
+        update_post_meta( $post_id, $campaign, $before ); 
+    }
+    
+    $tf = 'Ymd\THis';
+    
+    header('Content-type: text/calendar; method="PUBLISH"; component="VEVENT";');
+    header('Content-disposition: attachment; filename=bikefun.ics;');
+    echo "BEGIN:VCALENDAR\n";
+    echo "VERSION:2.0\n";
+	echo "PRODID:-//CBDWeb//Bikefun//EN\n";
+	echo "METHOD:PUBLISH\n";
+	echo "BEGIN:VTIMEZONE\n";
+	echo "TZID:" .   get_option('timezone_string') . "\n";
+	echo "BEGIN:STANDARD\n";
+	echo "DTSTART:19500402T020000\n";
+	echo "TZOFFSETFROM:+1100\n";
+	echo "TZOFFSETTO:+1000\n";
+	echo "RRULE:FREQ=YEARLY;BYMINUTE=0;BYHOUR=2;BYDAY=1SU;BYMONTH=4\n";
+	echo "END:STANDARD\n";
+	echo "BEGIN:DAYLIGHT\n";
+	echo "DTSTART:19501001T020000\n";
+	echo "TZOFFSETFROM:+1000\n";
+	echo "TZOFFSETTO:+1100\n";
+	echo "RRULE:FREQ=YEARLY;BYMINUTE=0;BYHOUR=2;BYDAY=1SU;BYMONTH=10\n";
+	echo "END:DAYLIGHT\n";
+	echo "END:VTIMEZONE\n";
+	echo "BEGIN:VEVENT\n";
+        echo 'DTSTART;TZID="' . get_option('timezone_string') . '":' . date( $tf, $meta_sd ) . "\n";
+        echo 'DTEND;TZID="' . get_option('timezone_string') . '":' . date( $tf, $meta_ed ) . "\n";
+        echo 'DTSTAMP:' . date( $tf, time() + get_option( 'gmt_offset' ) * 3600 ) . "\n";
+        echo "CLASS:PUBLIC\n";
+        echo "SUMMARY:" . $post->post_title . "\n";
+        echo "LOCATION:" . $meta_place . "\n";
+        $content = str_replace("\n", "\n  ", wpautop ( $post->post_content ) ); // folding as per https://www.ietf.org/rfc/rfc2445.txt
+        echo "X-ALT-DESC;FMTTYPE=text/html:" . $content . "<br/>Check here for the latest updates: " . post_permalink( $post_id ) . "\n";
+        echo "DESCRIPTION:" . $post->post_content; // note line breaks are literal but other HTML still embedded :(
+        echo '\nCheck here for the latest updates: ' . post_permalink( $post_id ) . "\n"; // first \n is passed not interpreted because single quotes
+        echo "Link:" . $meta_url . "\n";
+        $post_thumbnail_id = get_post_thumbnail_id( $post_id );
+        if( $post_thumbnail_id ) {
+            $thumbnail = wp_get_attachment_image_src( $post_thumbnail_id, "medium" );
+            echo "ATTACH:" . $thumbnail[0] . "\n";
+        }
+        echo "UID:" . $post_id . "\n";
+        echo "END:VEVENT\n";
+        echo "END:VCALENDAR\n";
+    die;
+}
+/*
+ * Options page for Events plugin
+ */
+add_action( 'admin_menu', 'events_menu' );
+
+/** Step 1. */
+function events_menu() {
+        add_submenu_page( 'edit.php?post_type=bf_events', 'Event Options', 'Options', 'manage_options', basename(__FILE__), 'event_options' );
+}
+
+/** Step 3. */
+function event_options() {
+//        bf_newsletter_admin_scripts( "bf_newsletter_options" ); // load the admin CSS
+	if ( !current_user_can( 'manage_options' ) )  {
+		wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+	}
+
+            // variables for the field and option names 
+            $hidden_field_name = 'bf_submit_hidden';
+            $options_array = array ( 
+                array('opt_name'=>'event-moderator-email', 'data_field_name'=>'event-moderator-email', 
+                    'opt_label'=>'Event moderator (comma separated email addresses)', 'field_type'=>'textarea'),
+            );
+
+            // See if the user has posted us some information
+            // If they did, this hidden field will be set to 'Y'
+            if( isset($_POST[ $hidden_field_name ]) && $_POST[ $hidden_field_name ] == 'Y' ) {
+
+                foreach ($options_array as $option_array ) {
+                    
+                    // Read their posted value
+                    $opt_val = stripslashes_deep ( $_POST[ $option_array['data_field_name'] ] );
+
+                    // Save the posted value in the database
+                    update_option( $option_array ['opt_name'], $opt_val );
+                }
+
+                // Put an settings updated message on the screen
+
+                ?>
+                <div class="updated"><p><strong><?php _e('settings saved.' ); ?></strong></p></div>
+            <?php }
+
+            // Now display the settings editing screen
+            ?>
+            <div class="wrap">
+
+            <h2>Event Settings</h2>
+
+            <form name="event_options" id="event_options" method="post" action="">
+                <input type="hidden" name="<?php echo $hidden_field_name; ?>" value="Y">
+
+                <?php 
+                foreach ( $options_array as $option_array ) { 
+                    // Read in existing option value from database
+                    $opt_val = get_option( $option_array[ 'opt_name' ] );
+                    ?>
+                    <p><?php _e( $option_array[ 'opt_label' ] );
+                        if($option_array[ 'field_type' ] === 'textarea' ) { ?>
+                            <textarea name="<?php echo $option_array[ 'data_field_name' ]; ?>"><?php echo $opt_val; ?></textarea>
+                        <?php } else { ?>
+                            <input type="<?=$option_array[ 'field_type' ]?>" name="<?=$option_array[ 'data_field_name' ]?>" value="<?=$opt_val?>"/>
+                        <?php } ?>
+                    </p>
+                <?php } ?>
+                <hr />
+
+                <p class="submit">
+                <input type="submit" name="Submit" class="button-primary" value="<?php esc_attr_e('Save Changes') ?>" />
+                </p>
+
+            </form>
+        </div>
+    <?php
+}
+/*
+ * Add link to admin menu bar for Events
+ */
+add_action( 'admin_bar_menu', 'toolbar_event_link', 999 );
+function toolbar_event_link( $wp_admin_bar ) {
+    $args = array ( 
+        'id'=>'bf-events',
+        'title'=>'Events',
+        'parent'=>'site-name',
+        'href'=>get_site_url() . '/wp-admin/edit.php?post_type=bf_events',
+    );
+
+    $wp_admin_bar->add_node( $args );
+}

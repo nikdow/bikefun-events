@@ -8,6 +8,9 @@
     border-bottom: solid #AAA 1px;
     border-top: solid #777 1px;
 }
+table#events {
+    line-height: 1;
+}
 table#events th {
     font-weight: bold;
 }
@@ -51,6 +54,62 @@ table#events, table#events th, table#events td {
 .farleft {
     margin-left: -9999px !important;
     height: 10px;
+}
+
+.right-margin {
+    margin-right: 5px;
+}
+
+.removed {
+    display: none;
+}
+
+span#embedClick {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#embedCode input {
+    width: 600px;
+}
+
+#embedCalCode {
+    margin-top: 5px;
+}
+
+.entry-thumbnail img {
+    margin: 0 0 10px 10px !important;
+}
+
+body.single-bf_events .paging-navigation .nav-next {
+    padding: 0;
+}
+body.single-bf_events .paging-navigation .nav-next span {
+    padding-right: 10px;
+}
+body.single-bf_events .paging-navigation .meta-nav {
+    background-color: inherit !important;
+    color: inherit;
+    display: inline;
+}
+.paging-navigation a:hover .meta-nav {
+    background-color: inherit !important;
+}
+.paging-navigation .nav-links, .sidebar .paging-navigation .nav-links {
+    max-width: none !important;
+}
+.sidebar .paging-navigation .nav-links {
+    padding-right: 150px !important;
+}
+.paging-navigation a {
+    font-size: 18px !important;
+}
+.paging-navigation .meta-nav {
+    font-size: 20px !important;
+}
+.bf_overline {
+    margin-top: 20px;
+    border-top: solid grey 1px;
 }
 aside.widget_nav_menu {
 	width: 280px;
