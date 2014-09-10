@@ -111,6 +111,6 @@ body.single-bf_events .paging-navigation .meta-nav {
     margin-top: 20px;
     border-top: solid grey 1px;
 }
-aside.widget_nav_menu {
+.sidebar .site-footer .widget.widget_nav_menu {
 	width: 280px;
 }
