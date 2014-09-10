@@ -202,7 +202,7 @@ case "bf_col_ev_date":
     } else {
         $enddate = "";
     }
-    $startdate = date("j F Y", $startd);
+    $startdate = date("D, j F Y", $startd);
     
     echo $startdate . '<br /><em>' . $enddate . '</em>';
 break;
