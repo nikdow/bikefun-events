@@ -52,3 +52,6 @@ table#events, table#events th, table#events td {
     margin-left: -9999px !important;
     height: 10px;
 }
+aside.widget_nav_menu {
+	width: 280px;
+}
