@@ -1217,3 +1217,189 @@ function toolbar_event_link( $wp_admin_bar ) {
 
     $wp_admin_bar->add_node( $args );
 }
+
+
+/*
+ * Added iCal based on 
+
+Plugin Name: iCal for Events Manager
+Description: Creates an iCal feed for Events Manager at http://your-web-address/?ical. 
+Version: 1.0.5
+Author: benjo4u
+Author URI: http://benjaminfleischer.com/code/ical-for-events-manager
+*/
+
+function iCalFeed()
+{
+    global $wpdb;
+
+    if (isset($_GET["debug"]))
+    {
+        define("DEBUG", true);
+    }
+$getstring = $_GET['ical'];
+if(isset($_GET['forceoffset'])) {
+$forceoffset = get_option("gmt_offset");
+} else {
+$forceoffset = "";
+}
+ if($getstring == 'ics') {
+        if(file_exists('icalendar.ics')) {
+            header("Content-Type: text/Calendar");
+            header("Content-Disposition: inline; filename=icalendar.ics");
+        } else { echo 'no icalendar.ics file found'; }
+}
+    $now = time() + ( get_option( 'gmt_offset' ) * 3600 );
+    $querystr = "SELECT metastart.meta_value as start, metaend.meta_value as end, 
+                wposts.*, metaplace.meta_value as place
+            FROM $wpdb->posts wposts, $wpdb->postmeta metastart, $wpdb->postmeta metaend, $wpdb->postmeta metaplace
+            WHERE (wposts.ID = metastart.post_id AND wposts.ID = metaend.post_id and wposts.ID = metaplace.post_id)
+            AND (metaend.meta_key = 'bf_events_enddate' AND metaend.meta_value > $now )
+            AND metastart.meta_key = 'bf_events_startdate'
+            AND metaplace.meta_key = 'bf_events_place'
+            AND wposts.post_type = 'bf_events'
+            AND wposts.post_status = 'publish'
+            ORDER BY metastart.meta_value ASC
+         ";
+
+        $posts = $wpdb->get_results($querystr, OBJECT);
+
+#settings
+if(isset($_GET['tzlocation'])) { $tzlocation = $_GET['tzlocation']; }
+else { $tzlocation = get_option('timezone_string'); }
+
+if(isset($_GET['tzoffset_standard'])) { $tzoffset_standard = $_GET['tzoffset_standard'];}
+else { $tzoffset_standard = "+1000"; }
+
+if(isset($_GET['tzname'])) { $tzname = $_GET['tzname']; }
+else { $tzname = "CST"; }
+
+if(isset($_GET['tzname_daylight'])) { $tzname_daylight = $_GET['tzname_daylight']; }
+else { $tzname_daylight="CDT"; }
+
+if(isset($_GET['tzoffset_daylight'])) { $tzoffset_daylight = $_GET['tzoffset_daylight']; }
+else { $tzoffset_daylight = "+1100"; }
+
+
+    $events = "";
+    $space = "    ";
+    foreach ($posts as $post)
+    {
+        $convertDateStart = $post->start + get_option( 'gmt_offset' ) * 3600;
+        $convertDateEnd = $post->end + get_option( 'gmt_offset' ) * 3600;
+        if ($convertDateEnd < $convertDateStart ) {
+            $convertDateEnd = $convertDateStart;
+        }
+    
+$printableline = '\\n';
+        $eventStart = date("Ymd\THis", $convertDateStart) . "Z";
+        $eventEnd = date("Ymd\THis", $convertDateEnd) . "Z";
+$timestamp = date("Ymd\THis", time()) . "Z";
+        $summary = $post->eventTitle;
+        $description = $post->eventDescription;
+       # $description = str_replace(",", "\,", $description);
+       # $description = str_replace("\\", "\\\\", $description);
+        $description = str_replace("\n", $printableline, strip_tags($description));
+       # $description = str_replace("\r", $space, strip_tags($description));
+       # $description = str_replace("\t", $space, strip_tags($description));
+
+        $uid = $post->id . "@" . get_bloginfo('home');
+        $events .= "BEGIN:VEVENT\n";
+        $events .= "DTSTART:" . $eventStart . "\n";
+        $events .= "DTEND:" . $eventEnd . "\n";
+        $events .= "DTSTAMP:".$timestamp."\n";
+        $events .= "CREATED:".$timestamp."\n";
+        $events .= "LAST-MODIFIED:".$timestamp."\n";
+        $events .= "UID:" . $uid . "\n";
+        $events .= "SUMMARY:" . $post->post_title . "\n";
+        $content = "Meeting place: " . $post->place . ".\n" . $post->post_content;
+        $events .= "DESCRIPTION:" .  preg_replace("/[\n\t\r]/", $printableline, $content ) . "\n";
+        $events .= "END:VEVENT\n";
+    }
+
+    $blogName = get_bloginfo('name');
+    $blogURL = get_bloginfo('home');
+
+    if (!defined('DEBUG'))
+    {
+        header('Content-type: text/calendar');
+        header('Content-Disposition: attachment; filename="iCal-EC.ics"');
+    }
+
+    $content = "BEGIN:VCALENDAR\n";
+    $content .= "PRODID:-//" . $blogName . "//NONSGML v1.0//EN\n";
+    $content .= "VERSION:2.0\n";
+    $content .= "CALSCALE:GREGORIAN\n";
+    $content .= "METHOD:PUBLISH\n";
+    $content .= "X-WR-CALNAME:" . $blogName . "\n";
+    $content .= "X-ORIGINAL-URL:" . $blogURL . "\n";
+    $content .= "X-WR-CALDESC:Events for " . $blogName . "\n";
+    $content .= "X-WR-TIMEZONE:".$tzlocation."\n";
+    $content .=  "BEGIN:VTIMEZONE\n";
+	$content .=  "TZID:" .   get_option('timezone_string') . "\n";
+	$content .=  "BEGIN:STANDARD\n";
+	$content .=  "DTSTART:19500402T020000\n";
+	$content .=  "TZOFFSETFROM:+1100\n";
+	$content .=  "TZOFFSETTO:+1000\n";
+	$content .=  "RRULE:FREQ=YEARLY;BYMINUTE=0;BYHOUR=2;BYDAY=1SU;BYMONTH=4\n";
+	$content .=  "END:STANDARD\n";
+	$content .=  "BEGIN:DAYLIGHT\n";
+	$content .=  "DTSTART:19501001T020000\n";
+	$content .=  "TZOFFSETFROM:+1000\n";
+	$content .=  "TZOFFSETTO:+1100\n";
+	$content .=  "RRULE:FREQ=YEARLY;BYMINUTE=0;BYHOUR=2;BYDAY=1SU;BYMONTH=10\n";
+	$content .=  "END:DAYLIGHT\n";
+	$content .=  "END:VTIMEZONE\n";
+
+    $content .= $events;
+    $content .= "END:VCALENDAR";
+
+if($getstring == 'cron' || $getstring == 'rss') {
+$myFile = "icalendar.ics";
+$fh = fopen($myFile, 'w') or die("can't open file");
+fwrite($fh, $content);
+fclose($fh);
+if ($getstring == 'cron') {
+echo "icalendar.ics created";
+} else {
+$rsscron = '<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+
+<channel>
+<title>'.$blogName.' cronless icalendar update</title>
+<description>iCalendar for Events Manager Cronless Update</description>
+<link>'.$blogURL.'</link>
+<lastBuildDate>Mon, 28 Aug 2006 11:12:55 -0400 </lastBuildDate>
+<pubDate>Tue, 29 Aug 2006 09:00:00 -0400</pubDate>
+<item>
+<title>You updated your icalendar feed with rss!</title>
+<description>icalendar file updated</description>
+<link>'.$blogURL.'/?ical</link>
+<guid isPermaLink="false"> 1102345</guid>
+<pubDate>Tue, 29 Aug 2006 09:00:00 -0400</pubDate>
+</item>
+
+</channel>
+</rss>';
+echo $rsscron;
+}
+exit;
+} else {
+    echo $content;
+}
+    if 
+(defined('DEBUG'))
+    {
+        #echo "\n" . $queryEvents . "\n";    
+        #echo $eventStart . "\n";
+    }
+
+    exit;
+}
+
+if (isset($_GET['ical']))
+{
+    add_action('init', 'iCalFeed');
+}
+
+?>
