@@ -886,11 +886,11 @@ function bf_newEvent() {
     /*
      * mail to submitter
      */
-    $subject = $existing ? "Your update is now live" : "Thanks for listing with Bikefun"; // use blog title in subject!
+    $subject = $existing ? "Your update is now live" : "Thanks for listing with " . get_option('bf-organisation'); // use blog title in subject!
     $headers = array();
-    $headers[] = 'From: Bikefun <moderator@bikefun.org>';
+    $headers[] = 'From: ' . get_option('bf-organisation') . get_option('bf-newsletter-sender');
     $headers[] = "Content-type: text/html";
-    $message = "<P>Thanks for " . ($existing ? "updating your " : "") . "listing with Bikefun. ";
+    $message = "<P>Thanks for " . ($existing ? "updating your " : "") . "listing with " . get_option('bf-organisation') . ". ";
     if ( $existing ) {
         $message .= "Your event has been updated, except for the description field, which requires moderation.";
     } else {
@@ -905,7 +905,7 @@ function bf_newEvent() {
      */
     $subject = $existing ? "request to update existing event description" : "New listing request";
     $headers = array();
-    $headers[] = 'From: Bikefun <moderator@bikefun.org>';
+    $headers[] = 'From: Bikefun ' . get_option('bf-newsletter-sender');
     $headers[] = "Content-type: text/html";
     $message = $existing ? 
             "A request has been made to update the description of an event." :
@@ -914,7 +914,7 @@ function bf_newEvent() {
     $recipient_option = get_option('event-moderator-email');
     wp_mail ( $recipient_option, $subject, $message, $headers );
     
-    echo json_encode( array( 'success'=>'Thanks for ' . ($existing ? "updating your " : "") . "listing with Bikefun. Look for " . ($existing ? "a new " : "an ") . "email from us with a link that allows you to edit your event." ) );
+    echo json_encode( array( 'success'=>'Thanks for ' . ($existing ? "updating your " : "") . "listing with " . get_option('bf-organisation') . ". Look for " . ($existing ? "a new " : "an ") . "email from us with a link that allows you to edit your event." ) );
     die();
 }
 /*
@@ -1047,12 +1047,12 @@ function bf_sendSecret() {
     $secret = generateRandomString();
     update_post_meta ( $post_id, "bf_events_secret", $secret );
     
-    $subject = "New link to edit your Bikefun event";
+    $subject = "New link to edit your " . get_option('bf-organisation') . " event";
     $headers = array();
-    $headers[] = 'From: Bikefun <moderator@bikefun.org>';
+    $headers[] = 'From: ' . get_option('bf-organisation') . ' ' . get_option('bf-newsletter-sender');
     $headers[] = "Content-type: text/html";
     $message .= "<P>Here is your new link which you can use to edit the event you have listed.</P>";
-    $message .= "<P><a href='http://www.bikefun.org/list-your-event/?secret=" . $secret . "'>Click here to edit your event</a></P>";
+    $message .= "<P><a href='" . get_site_url() . "/list-your-event/?secret=" . $secret . "'>Click here to edit your event</a></P>";
     $message .= "<P>Note the secret key in the link above only works once, but we send you a new email like this one each time, with a new secret in it.";
     wp_mail( $bf_events_email, $subject, $message, $headers );
 }
@@ -1150,6 +1150,10 @@ function event_options() {
             $options_array = array ( 
                 array('opt_name'=>'event-moderator-email', 'data_field_name'=>'event-moderator-email', 
                     'opt_label'=>'Event moderator (comma separated email addresses)', 'field_type'=>'textarea'),
+                array('opt_name'=>'bf-organisation', 'data_field_name'=>'bf_organisation', 
+                    'opt_label'=>'Organisation name', 'field_type'=>'text'),
+                array('opt_name'=>'bf-newsletter-sender', 'data_field_name'=>'bf_newsletter_sender',
+                    'opt_label'=>'Newsletter sender', 'field_type'=>'email'),
             );
 
             // See if the user has posted us some information
