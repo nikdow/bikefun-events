@@ -888,7 +888,7 @@ function bf_newEvent() {
      */
     $subject = $existing ? "Your update is now live" : "Thanks for listing with " . get_option('bf-organisation'); // use blog title in subject!
     $headers = array();
-    $headers[] = 'From: ' . get_option('bf-organisation') . get_option('newsletter-sender-address');
+    $headers[] = 'From: "' . get_option('bf-organisation') . '" <' . get_option('newsletter-sender-address') . '>';
     $headers[] = "Content-type: text/html";
     $message = "<P>Thanks for " . ($existing ? "updating your " : "") . "listing with " . get_option('bf-organisation') . ". ";
     if ( $existing ) {
@@ -905,7 +905,7 @@ function bf_newEvent() {
      */
     $subject = $existing ? "request to update existing event description" : "New listing request";
     $headers = array();
-    $headers[] = 'From: Bikefun ' . get_option('newsletter-sender-address');
+    $headers[] = 'From: "' . get_option('bf-organisation') . '" <' . get_option('newsletter-sender-address') . '>';
     $headers[] = "Content-type: text/html";
     $message = $existing ? 
             "A request has been made to update the description of an event." :
@@ -1049,7 +1049,7 @@ function bf_sendSecret() {
     
     $subject = "New link to edit your " . get_option('bf-organisation') . " event";
     $headers = array();
-    $headers[] = 'From: ' . get_option('bf-organisation') . ' ' . get_option('newsletter-sender-address');
+    $headers[] = 'From: "' . get_option('bf-organisation') . '" <' . get_option('newsletter-sender-address') . '>';
     $headers[] = "Content-type: text/html";
     $message .= "<P>Here is your new link which you can use to edit the event you have listed.</P>";
     $message .= "<P><a href='" . get_site_url() . "/list-your-event/?secret=" . $secret . "'>Click here to edit your event</a></P>";
