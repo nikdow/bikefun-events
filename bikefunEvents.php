@@ -1114,10 +1114,11 @@ function bf_iCal() {
         echo "SUMMARY:" . $post->post_title . "\n";
         echo "LOCATION:" . $meta_place . "\n";
         $content = str_replace("\n", "\n  ", wpautop ( $post->post_content ) ); // folding as per https://www.ietf.org/rfc/rfc2445.txt
-        echo "X-ALT-DESC;FMTTYPE=text/html:" . $content . "<br/>Check here for the latest updates: " . post_permalink( $post_id ) . "\n";
-        echo "DESCRIPTION:" . $post->post_content; // note line breaks are literal but other HTML still embedded :(
-        echo '\nCheck here for the latest updates: ' . post_permalink( $post_id ) . "\n"; // first \n is passed not interpreted because single quotes
-        echo "Link:" . $meta_url . "\n";
+        echo "X-ALT-DESC;FMTTYPE=text/html:" . $content . "\n  <br/>Check here for the latest updates: " . post_permalink( $post_id );
+        echo "\n  Link:" . $meta_url . "\n";
+        echo "DESCRIPTION:" . str_replace("\n", "\n  ", $post->post_content ); // note line breaks are literal but other HTML still embedded :(
+        echo '\n  Check here for the latest updates: ' . post_permalink( $post_id ) . "\n"; // first \n is passed not interpreted because single quotes
+        echo "\n  Link:" . $meta_url . "\n";
         $post_thumbnail_id = get_post_thumbnail_id( $post_id );
         if( $post_thumbnail_id ) {
             $thumbnail = wp_get_attachment_image_src( $post_thumbnail_id, "medium" );
