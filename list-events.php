@@ -98,6 +98,9 @@ function get_events( $first_event, $rows_per_page ){
     foreach ( $rows as $row ) {
         $stime = date($time_format, $row->startdate + get_option( 'gmt_offset' ) * 3600);
         $startout = date("D, M j, Y", $row->startdate + get_option( 'gmt_offset' ) * 3600 );
+        $startDT = new DateTime($row->startdate, get_option( 'timezone_string' ) );
+//        $stime = $startDT->format( $time_format );
+//        $startout = $startDT->format( "D, M j, Y" );
         $output[] = array(
             'title'=>$row->post_title,
             'startdate'=>$startout,
