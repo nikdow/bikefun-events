@@ -18,7 +18,6 @@ function enqueue_short_events_script() {
         wp_enqueue_script('angular');
         wp_enqueue_script('angular-animate');
 	wp_enqueue_script('events');
-//        wp_enqueue_style('fs-signature-styles');
 }
 function events_list_short (  ) {
     global $add_short_events_script;
@@ -96,11 +95,13 @@ function get_events( $first_event, $rows_per_page ){
     $output = array();
     $time_format = get_option('time_format');
     foreach ( $rows as $row ) {
-        $stime = date($time_format, $row->startdate + get_option( 'gmt_offset' ) * 3600);
-        $startout = date("D, M j, Y", $row->startdate + get_option( 'gmt_offset' ) * 3600 );
-        $startDT = new DateTime($row->startdate, get_option( 'timezone_string' ) );
-//        $stime = $startDT->format( $time_format );
-//        $startout = $startDT->format( "D, M j, Y" );
+//        $stime = date($time_format, $row->startdate + get_option( 'gmt_offset' ) * 3600);
+//        $startout = date("D, M j, Y", $row->startdate + get_option( 'gmt_offset' ) * 3600 );
+        $startDT = new DateTime();
+        $startDT->setTimestamp( $row->startdate);
+        $startDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
+        $stime = $startDT->format( $time_format );
+        $startout = $startDT->format( "D, M j, Y" );
         $output[] = array(
             'title'=>$row->post_title,
             'startdate'=>$startout,

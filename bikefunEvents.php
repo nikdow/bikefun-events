@@ -30,8 +30,13 @@ add_filter('post_type_link', 'event_permalink', 10, 4);
 function event_permalink($permalink, $post, $leavename) {
     if ( get_post_type( $post ) === "bf_events" ) {
         $sd = get_post_meta( $post->ID, 'bf_events_startdate', true);
-        $year = date('Y', $sd + get_option( 'gmt_offset' ) * 3600);
-        $month = date('m', $sd + get_option( 'gmt_offset' ) * 3600);
+//        $year = date('Y', $sd + get_option( 'gmt_offset' ) * 3600);
+//        $month = date('m', $sd + get_option( 'gmt_offset' ) * 3600);
+        $startDT = new DateTime();
+        $startDT->setTimestamp( $sd );
+        $startDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
+        $year = $startDT->format( 'Y' );
+        $month = $startDT->format ( 'm' );
 
         $rewritecode = array(
          '%eventyear%',
@@ -195,28 +200,42 @@ case "bf_col_ev_cat":
 break;
 case "bf_col_ev_date":
     // - show dates -
-    $startd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $startd = $custom["bf_events_startdate"][0];
     if( isset ($custom["bf_events_enddate"])) {
-        $endd = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
-        $enddate = date("j F Y", $endd);
+        $endd = $custom["bf_events_enddate"][0];
+        $endDT = new DateTime();
+        $endDT->setTimestamp( $endd );
+        $endDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
+        $endout = $endDT->format( "D, M j, Y" );
+        $enddate = $endDT->format( "j F Y" ) ;
     } else {
         $enddate = "";
     }
-    $startdate = date("D, j F Y", $startd);
+    
+    $startDT = new DateTime();
+    $startDT->setTimestamp ( $startd );
+    $startDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
+    $startdate = $startDT->format( "D, j F Y" );
     
     echo $startdate . '<br /><em>' . $enddate . '</em>';
 break;
 case "bf_col_ev_times":
     // - show times -
-    $startt = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $startt = $custom["bf_events_startdate"][0];
     $time_format = get_option('time_format');
     if( isset ($custom["bf_events_enddate"])) {
-        $endt = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
-        $endtime = date($time_format, $endt);
+        $endt = $custom["bf_events_enddate"][0];
+        $endDT = new DateTime();
+        $endDT->setTimestamp( $endt );
+        $endDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
+        $endtime = $endDT->format( $time_format );
     } else {
         $endtime = "";
     }
-    $starttime = date($time_format, $startt);
+    $startDT = new DateTime();
+    $startDT->setTimestamp( $startt );
+    $startDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+    $starttime = $startDT->format( $time_format );
     
     echo $starttime . ' - ' .$endtime;
 break;
@@ -303,10 +322,20 @@ function bf_events_meta () {
 
     global $post;
     $custom = get_post_custom($post->ID);
-    $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $meta_ed = isset ( $custom["bf_events_enddate"] ) ? $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600 : 0;
-    $meta_st = $meta_sd;
-    $meta_et = $meta_ed;
+    $meta_sd = $custom["bf_events_startdate"][0];
+    if ($custom["bf_events_startdate"][0] == null) $meta_sd = time();
+
+    $startDT = new DateTime();
+    $startDT->setTimestamp( $meta_sd );
+    $startDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
+    if ( isset ( $custom["bf_events_enddate"] ) ) {
+        $meta_ed = $custom["bf_events_enddate"][0];
+    } else {
+        $meta_ed = $meta_sd;
+    }
+    $endDT = new DateTime();
+    $endDT->setTimestamp($meta_ed );
+    $endDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
     $meta_email = $custom["bf_events_email"][0];
     $meta_place = $custom["bf_events_place"][0];
     $meta_url = $custom["bf_events_url"][0];
@@ -317,20 +346,19 @@ function bf_events_meta () {
 
     // - grab wp time format -
 
-    $date_format = get_option('date_format'); // Not required in my code
+//    $date_format = get_option('date_format'); // Not required in this code
     $time_format = get_option('time_format');
 
     // - populate today if empty, 00:00 for time -
 
-    if ($custom["bf_events_startdate"][0] == null) { $meta_sd = time(); $meta_ed = $meta_sd; $meta_st = 0; $meta_et = 0;}
-
+  
     // - convert to pretty formats -
 
-    $clean_sd = date("D, d M Y", $meta_sd);
-    $clean_st = date($time_format, $meta_st);
+    $clean_sd = $startDT->format( "D, d M Y" );
+    $clean_st = $startDT->format( $time_format );
     if ( $meta_ed ) {
-        $clean_ed = date("D, d M Y", $meta_ed);
-        $clean_et = date($time_format, $meta_et);
+        $clean_ed = $endDT->format( "D, d M Y" );
+        $clean_et = $endDT->format( $time_format );
     } else {
         $clean_ed = "";
         $clean_et = "";
@@ -352,9 +380,9 @@ function bf_events_meta () {
             </li>
         <?php } ?>
         <li><label>Start Date</label><input name="bf_events_startdate" class="bfdate" value="<?php echo $clean_sd; ?>" /></li>
-        <li><label>Start Time</label><input name="bf_events_starttime" value="<?php echo $clean_st; ?>" /><em>Use 24h format (7pm = 19:00)</em></li>
+        <li><label>Start Time</label><input name="bf_events_starttime" value="<?php echo $clean_st; ?>" /></li>
         <li><label>End Date</label><input name="bf_events_enddate" class="bfdate" value="<?php echo $clean_ed; ?>" /></li>
-        <li><label>End Time</label><input name="bf_events_endtime" value="<?php echo $clean_et; ?>" /><em>Use 24h format (7pm = 19:00)</em></li>
+        <li><label>End Time</label><input name="bf_events_endtime" value="<?php echo $clean_et; ?>" /></li>
         <li><label>Your Email</label><input type="email" name="bf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
         <li><label>Meeting Place</label><input class="wide" name="bf_events_place" value="<?php echo $meta_place; ?>" /></li>
         <li><label>Web Page</label><input class="wide" type="url" name="bf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
@@ -385,21 +413,25 @@ function save_bf_events(){
         return $post->ID;
 
     // - convert back to unix & update post
-
+    $dateformat = 'Y-m-d H:i:s';
     if(!isset($_POST["bf_events_startdate"])):
         return $post;
     endif;
-    $updatestartd = strtotime ( $_POST["bf_events_startdate"] . $_POST["bf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
-    update_post_meta($post->ID, "bf_events_startdate", $updatestartd );
-    update_post_meta($post->ID, "bf_events_year", date("Y", $updatestartd ) );
-    update_post_meta($post->ID, "bf_events_month", date("m", $updatestartd ) );
+    $updatestartd = strtotime ( $_POST["bf_events_startdate"] . $_POST["bf_events_starttime"] ); // convert to timestamp, free text format
+    $formattedST = date( $dateformat, $updatestartd ); // standardised text format
+    $startDT = DateTime::createFromFormat( $dateformat, $formattedST, new DateTimeZone( get_option( 'timezone_string' ) ) );
+    update_post_meta($post->ID, "bf_events_startdate", $startDT->getTimestamp() ); // timestamp is UMT
+    update_post_meta($post->ID, "bf_events_year", $startDT->format("Y" ) );
+    update_post_meta($post->ID, "bf_events_month", $startDT->format("m" ) );
 
     if( ! isset( $_POST[ "bf_events_enddate" ] ) ) :
         return $post;
     endif;
     
-    $updateendd = strtotime ( $_POST["bf_events_enddate"] . $_POST["bf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
-    update_post_meta($post->ID, "bf_events_enddate", $updateendd );
+    $updateendd = strtotime ( $_POST["bf_events_enddate"] . $_POST["bf_events_endtime"] );
+    $formattedET = date ( $dateformat, $updateendd );
+    $endDT = DateTime::createFromFormat($dateformat, $formattedET, new DateTimeZone( get_option( 'timezone_string' ) ) );
+    update_post_meta($post->ID, "bf_events_enddate", $endDT->getTimestamp() );
     if ( isset( $_POST[ "bf_pending_description"] ) ) {
         if ( $_POST[ "bf_pending_description" ] == "" ) {
             delete_post_meta($post->ID, 'bf_pending_description' );
@@ -511,7 +543,7 @@ ob_start();
 // - hide events that are older than 6am today (because some parties go past your bedtime) -
 
 // $today6am = strtotime('today 6:00') + ( get_option( 'gmt_offset' ) * 3600 );
-$now = time() + ( get_option( 'gmt_offset' ) * 3600 );
+$now = time() + ( get_option( 'gmt_offset' ) * 3600 ); // gmt_offset changes with DST, so it's correct for "now" but not correct for not-now times.
 
 // - query -
 global $wpdb;
@@ -539,8 +571,10 @@ setup_postdata($post);
 
 // - custom variables -
 $custom = get_post_custom(get_the_ID());
-$sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-$ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+$sd = $custom["bf_events_startdate"][0];
+$ed = $custom["bf_events_enddate"][0];
+$startDT = new DateTime();
+$startDT->
 
 // - determine if it's a new day -
 $longdate = date("l, F j, Y", $sd);
@@ -601,10 +635,19 @@ function event_details($content) {
     $sd = get_post_meta( $post->ID, 'bf_events_startdate', true);
     $ed = get_post_meta( $post->ID, 'bf_events_enddate', true);
     $time_format = get_option('time_format');
-    $stime = date($time_format, $sd + get_option( 'gmt_offset' ) * 3600);
-    if( $ed ) $etime = date($time_format, $ed + get_option( 'gmt_offset' ) * 3600);
-    $startout = date("l, F j, Y", $sd + get_option( 'gmt_offset' ) * 3600 );
-    if ( $ed ) $endout = date("l, F j, Y", $ed + get_option( 'gmt_offset' ) * 3600 );
+    
+    $startDT = new DateTime();
+    $startDT->setTimestamp( $sd );
+    $startDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+    $stime = $startDT->format( $time_format );
+    
+    $endDT = new DateTime();
+    $endDT->setTimestamp( $ed );
+    $endDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+    $etime = $endDT->format( $time_format );
+    
+    $startout = $startDT->format( "l, F j, Y" );
+    if ( $ed ) $endout = $endDT->format( "l, F j, Y" );
     $output .= "<div>Start: " . $startout . " " . $stime . "</div>";
     if ( $ed ) $output .= "<div>Finish: " . ($endout===$startout ? "" : $endout . " ") . $etime . "</div>";
     $output .= "<div>Meet at: " . get_post_meta( $post->ID, 'bf_events_place', true ) . "</div>";
@@ -799,14 +842,20 @@ function bf_newEvent() {
         echo json_encode( array( 'error'=>$post_id->get_error_message() ) );
         die;
     }
-    $updatestartd = strtotime ( $_POST["bf_events_startdate"] . $_POST["bf_events_starttime"] ) - get_option( 'gmt_offset' ) * 3600;
-    update_post_meta($post_id, "bf_events_startdate", $updatestartd );
-    update_post_meta($post_id, "bf_events_year", date("m", $updatestartd ) );
-    update_post_meta($post_id, "bf_events_month", date("Y", $updatestartd ) );
+    $updatestartd = strtotime ( $_POST["bf_events_startdate"] . $_POST["bf_events_starttime"] ); // unix time integer;
+    $dateformat = "Y-m-d H:i:s";
+    $formatDT = date( $dateformat, $updatestartd ); // formatted version;
+    $startDT = DateTime::createFromFormat($dateformat, $formatDT, new DateTimeZone( get_option( 'timezone_string' ) ) );
+    
+    update_post_meta($post_id, "bf_events_startdate", $startDT->getTimestamp() );
+    update_post_meta($post_id, "bf_events_year", $startDT->format( "m" ) );
+    update_post_meta($post_id, "bf_events_month", $startDT->format( "Y" ) );
 
     if( isset( $_POST[ "bf_events_enddate" ] ) ) :
-        $updateendd = strtotime ( $_POST["bf_events_enddate"] . $_POST["bf_events_endtime"] ) - get_option( 'gmt_offset' ) * 3600;
-        update_post_meta($post_id, "bf_events_enddate", $updateendd );
+        $updateendd = strtotime ( $_POST["bf_events_enddate"] . $_POST["bf_events_endtime"] );
+        $formatDT = date( $dateformat, $updateend ); // formatted version;
+        $endDT = DateTime::createFromFormat($dateformat, $formatDT, new DateTimeZone( get_option( 'timezone_string' ) ) );
+        update_post_meta($post_id, "bf_events_enddate", $endDT->getTimestamp() );
     endif;
    
     update_post_meta($post_id, "bf_events_email", $bf_events_email );
@@ -974,12 +1023,19 @@ function bf_event_register ( $atts ) {
         }
         $post_id = $post->ID;
         $custom = get_post_custom( $post_id );
-        $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-        $meta_ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
-        $clean_sd = date("D, j F Y", $meta_sd );
-        $clean_ed = date("D, j F Y", $meta_ed );
-        $clean_st = date("g:i a", $meta_sd );
-        $clean_et = date("g:i a", $meta_ed );
+        $meta_sd = $custom["bf_events_startdate"][0];
+        $meta_ed = $custom["bf_events_enddate"][0];
+        $startDT = new DateTime();
+        $startDT->setTimestamp( $meta_sd );
+        $startDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+        $clean_sd = $startDT->format( "D, j F Y" );
+
+        $endDT = new DateTime();
+        $endDT->setTimestamp( $meta_ed );
+        $endDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+        $clean_ed = $endDT->format( "D, j F Y" );
+        $clean_st = $startDT->format( "g:i a" );
+        $clean_et = $startDT->format( "g:i a" );
         $meta_email = $custom["bf_events_email"][0];
         $meta_place = $custom["bf_events_place"][0];
         $meta_url = $custom["bf_events_url"][0];
@@ -1070,8 +1126,14 @@ function bf_iCal() {
     $campaign = $_REQUEST['campaign'];
     $post = get_post( $post_id, 'OBJECT' );
     $custom = get_post_custom( $post_id );
-    $meta_sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-    $meta_ed = $custom["bf_events_enddate"][0] + get_option( 'gmt_offset' ) * 3600;
+    $meta_sd = $custom["bf_events_startdate"][0];
+    $startDT = new DateTime();
+    $startDT->setTimestamp( $meta_sd );
+    $startDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+    $meta_ed = $custom["bf_events_enddate"][0];
+    $endDT = new DateTime();
+    $endDT->setTimestamp( $meta_ed );
+    $endDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
     $meta_email = $custom["bf_events_email"][0];
     $meta_place = $custom["bf_events_place"][0];
     $meta_url = $custom["bf_events_url"][0];
@@ -1107,8 +1169,8 @@ function bf_iCal() {
 	echo "END:DAYLIGHT\n";
 	echo "END:VTIMEZONE\n";
 	echo "BEGIN:VEVENT\n";
-        echo 'DTSTART;TZID="' . get_option('timezone_string') . '":' . date( $tf, $meta_sd ) . "\n";
-        echo 'DTEND;TZID="' . get_option('timezone_string') . '":' . date( $tf, $meta_ed ) . "\n";
+        echo 'DTSTART;TZID="' . get_option('timezone_string') . '":' . $startDT->format( $tf ) . "\n";
+        echo 'DTEND;TZID="' . get_option('timezone_string') . '":' . $endDT->format( $tf ) . "\n";
         echo 'DTSTAMP:' . date( $tf, time() + get_option( 'gmt_offset' ) * 3600 ) . "\n";
         echo "CLASS:PUBLIC\n";
         echo "SUMMARY:" . $post->post_title . "\n";
@@ -1288,16 +1350,22 @@ else { $tzoffset_daylight = "+1100"; }
     $space = "    ";
     foreach ($posts as $post)
     {
-        $convertDateStart = $post->start + get_option( 'gmt_offset' ) * 3600;
-        $convertDateEnd = $post->end + get_option( 'gmt_offset' ) * 3600;
+        $convertDateStart = $post->start;
+        $convertDateEnd = $post->end;
         if ($convertDateEnd < $convertDateStart ) {
             $convertDateEnd = $convertDateStart;
         }
     
 $printableline = '\\n';
-        $eventStart = date("Ymd\THis", $convertDateStart) . "Z";
-        $eventEnd = date("Ymd\THis", $convertDateEnd) . "Z";
-$timestamp = date("Ymd\THis", time()) . "Z";
+        $startDT = new DateTime();
+        $startDT->setTimestamp( $convertDateStart );
+        $startDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+        $endDT = new DateTime();
+        $endDT->setTimestamp( $convertDateEnd );
+        $endDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+        $eventStart = $startDT->format( "Ymd\THis" ) . "Z";
+        $eventEnd = $endDT->format( "Ymd\THis" ) . "Z";
+        $timestamp = date("Ymd\THis", time()) . "Z";
         $summary = $post->eventTitle;
         $description = $post->eventDescription;
        # $description = str_replace(",", "\,", $description);

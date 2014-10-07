@@ -84,11 +84,13 @@ echo '<?xml version="1.0" encoding="'.get_option('blog_charset').'"?'.'>'; ?>
         foreach ( $events as $post ) {
             setup_postdata($post);
             $custom = get_post_custom(get_the_ID());
-            $sd = $custom["bf_events_startdate"][0] + get_option( 'gmt_offset' ) * 3600;
-            $longdate = date("l, F j, Y", $sd);
-            $time_format = get_option('time_format');
-            $stime = date($time_format, $sd);
-
+            $sd = $custom["bf_events_startdate"][0];
+            $startDT = new DateTime();
+            $startDT->setTimestamp( $sd );
+            $startDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
+            $longdate = $startDT->format( "l, F j, Y" );
+            $time_format = get_option( 'time_format' );
+            $stime = $startDT->format( $time_format );
 
 //	while( have_posts()) : the_post();
 	?>
