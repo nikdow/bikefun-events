@@ -665,7 +665,6 @@ function event_details($content) {
     $postput .= "<div class='bf_overline'>";
     $postput .= "If you listed this event, we sent you an email with a link that allows you to update it.<br/>";
     $postput .= "If you want to edit this event but you don't have that email handy, <a href='#' onClick='newSecret(\"" . $post->ID . "\")'>click here</a> for a replacement email.<br/>";
-    $postput .= "Note that each email supercedes the link in all preceding emails, only the most recent link will work.";
     $postput .= "<div id='returnMessage'></div>";
     $now = time();
     if( $ed < $now ) {
