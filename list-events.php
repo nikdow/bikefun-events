@@ -7,7 +7,7 @@ add_action('wp_footer', 'enqueue_short_events_script');
 function short_list_events_script() {
     wp_register_script( 'angular', "//ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.min.js", 'jquery' );
     wp_register_script( 'angular-animate', "//ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular-animate.min.js", array( 'angular', 'jquery' ) );
-    wp_register_script('events',  plugins_url( 'js/eventslist.js' , __FILE__ ), array('jquery', 'angular') );
+    wp_register_script( 'events',  plugins_url( 'js/eventslist.js' , __FILE__ ), array('jquery', 'angular') );
 }
 function enqueue_short_events_script() {
 	global $add_short_events_script;
