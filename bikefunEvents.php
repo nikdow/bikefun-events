@@ -33,6 +33,7 @@ function event_permalink($permalink, $post, $leavename) {
 //        $year = date('Y', $sd + get_option( 'gmt_offset' ) * 3600);
 //        $month = date('m', $sd + get_option( 'gmt_offset' ) * 3600);
         $startDT = new DateTime();
+        
         $startDT->setTimestamp( $sd );
         $startDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
         $year = $startDT->format( 'Y' );
@@ -334,7 +335,7 @@ function bf_events_meta () {
         $meta_ed = $meta_sd;
     }
     $endDT = new DateTime();
-    $endDT->setTimestamp($meta_ed );
+    $endDT->setTimestamp( $meta_ed  );
     $endDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
     $meta_email = $custom["bf_events_email"][0];
     $meta_place = $custom["bf_events_place"][0];
@@ -793,7 +794,7 @@ function bf_newEvent() {
     } else {
         $bf_description = $_POST['bf_description'];
     }
-    
+
     require_once(ABSPATH . "wp-admin" . '/includes/image.php');
     require_once(ABSPATH . "wp-admin" . '/includes/file.php');
     require_once(ABSPATH . "wp-admin" . '/includes/media.php');
@@ -852,9 +853,9 @@ function bf_newEvent() {
 
     if( isset( $_POST[ "bf_events_enddate" ] ) ) :
         $updateendd = strtotime ( $_POST["bf_events_enddate"] . $_POST["bf_events_endtime"] );
-        $formatDT = date( $dateformat, $updateend ); // formatted version;
+        $formatDT = date( $dateformat, $updateendd ); // formatted version;
         $endDT = DateTime::createFromFormat($dateformat, $formatDT, new DateTimeZone( get_option( 'timezone_string' ) ) );
-        update_post_meta($post_id, "bf_events_enddate", $endDT->getTimestamp() );
+        update_post_meta($post_id, "bf_events_enddate", $endDT->getTimestamp() ); // new event comes here
     endif;
    
     update_post_meta($post_id, "bf_events_email", $bf_events_email );
