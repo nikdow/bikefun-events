@@ -342,6 +342,7 @@ function bf_events_meta () {
     $meta_url = $custom["bf_events_url"][0];
     $meta_campaign_iCalNative = $custom["iCalNative"][0];
     $meta_campaign_iCalEmbed = $custom["iCalEmbed"][0];
+    $meta_campaign_embedRef = get_post_meta('embedRefs', $post->ID );
     $meta_image = $custom["bf_events_image"][0];
     $meta_pending_description = $custom["bf_pending_description"][0];
 
@@ -391,6 +392,7 @@ function bf_events_meta () {
         <li><label><b>iCal downloads</b></label></li>
         <li><label>from this site</label><?=$meta_campaign_iCalNative?></li>
         <li><label>via embedding</label><?=$meta_campaign_iCalEmbed?></li>
+        <li><label>embed refs</label><?=implode(', ', $meta_campaign_embedRef);?></li>
     </ul>
     </div>
     <?php
@@ -1146,6 +1148,12 @@ function bf_iCal() {
         if( ! $before ) $before = 0;
         $before++;
         update_post_meta( $post_id, $campaign, $before ); 
+    }
+    if ( $campaign === 'iCalEmbed' ) {
+        $before = $custom [ 'embedRefs' ];
+        if ( ! $before ) $before = array();
+        $before[] = $_SERVER['HTTP_REFERER'];
+        update_post_meta( $post_id, 'embedRefs', $before );
     }
     
     $tf = 'Ymd\THis';
