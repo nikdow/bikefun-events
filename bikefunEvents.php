@@ -1150,10 +1150,11 @@ function bf_iCal() {
         update_post_meta( $post_id, $campaign, $before ); 
     }
     if ( $campaign === 'iCalEmbed' ) {
-        $before = $custom [ 'embedRefs' ];
+        $before = get_post_meta( $post_id, 'embedRefs' ) ;
         if ( ! $before ) $before = array();
         $before[] = $_SERVER['HTTP_REFERER'];
         update_post_meta( $post_id, 'embedRefs', $before );
+                
     }
     
     $tf = 'Ymd\THis';
