@@ -342,7 +342,7 @@ function bf_events_meta () {
     $meta_url = $custom["bf_events_url"][0];
     $meta_campaign_iCalNative = $custom["iCalNative"][0];
     $meta_campaign_iCalEmbed = $custom["iCalEmbed"][0];
-    $meta_campaign_embedRef = get_post_meta('embedRefs', $post->ID );
+    $meta_campaign_embedRef = get_post_meta('embedRefs', $post->ID, true );
     $meta_image = $custom["bf_events_image"][0];
     $meta_pending_description = $custom["bf_pending_description"][0];
 
