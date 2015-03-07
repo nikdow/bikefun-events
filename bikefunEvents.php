@@ -343,7 +343,6 @@ function bf_events_meta () {
     $meta_campaign_iCalNative = $custom["iCalNative"][0];
     $meta_campaign_iCalEmbed = $custom["iCalEmbed"][0];
     $meta_campaign_embedRef = get_post_meta('embedRefs', $post->ID, true );
-    print_r($meta_campaign_embedRef);
     $meta_image = $custom["bf_events_image"][0];
     $meta_pending_description = $custom["bf_pending_description"][0];
 
@@ -394,6 +393,7 @@ function bf_events_meta () {
         <li><label>from this site</label><?=$meta_campaign_iCalNative?></li>
         <li><label>via embedding</label><?=$meta_campaign_iCalEmbed?></li>
         <li><label>embed refs</label><?=implode(', ', $meta_campaign_embedRef);?></li>
+        <li><?=print_r($meta_campaign_embedRef)?></li>
     </ul>
     </div>
     <?php
