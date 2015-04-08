@@ -392,8 +392,8 @@ function bf_events_meta () {
         <li><label><b>iCal downloads</b></label></li>
         <li><label>from this site</label><?=$meta_campaign_iCalNative?></li>
         <li><label>via embedding</label><?=$meta_campaign_iCalEmbed?></li>
-        <li><label>embed refs</label><?=implode(', ', $meta_campaign_embedRef[0]);?></li>
-        
+        <li><label>embed refs</label><?=implode(', ', $meta_campaign_embedRef);?></li>
+        <li><?=print_r($meta_campaign_embedRef)?></li>
     </ul>
     </div>
     <?php
