@@ -15,15 +15,14 @@
  */
 defined('ABSPATH') or die("No script kiddies please!");
 
-function event_rewrite_rules() {
+function event_rewrite_tags() {
     global $wp_rewrite;
 
-    add_rewrite_tag( '%eventyear%', '([0-9]{4})', 'bf_events_year=');
-    add_rewrite_tag( '%eventmonth%', '([0-9]{2})', 'bf_events_month=');
-//    $wp_rewrite->add_permastruct('bf_events', '/events/%bf_events_year%/%bf_events_month%/%postname%', false);
-    add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php?post_type=bf_events&pagename=$matches[2]', 'top' );
+    add_rewrite_tag( '%bf_events_year%', '([0-9]{4})' );
+    add_rewrite_tag( '%bf_events_month%', '([0-9]{2})' );
+//    add_rewrite_rule(  '^events/([0-9]{4})/([0-9]{2})/([^/]+)?', 'index.php?post_type=bf_events&pagename=$matches[3]', 'top' );
 }
-add_action('init', 'event_rewrite_rules');
+add_action('init', 'event_rewrite_tags');
 
 add_filter('post_type_link', 'event_permalink', 10, 4);
 
@@ -40,8 +39,8 @@ function event_permalink($permalink, $post, $leavename) {
         $month = $startDT->format ( 'm' );
 
         $rewritecode = array(
-         '%eventyear%',
-         '%eventmonth%',
+         '%bf_events_year%',
+         '%bf_events_month%',
          $leavename? '' : '%postname%',
         );
 
@@ -88,7 +87,7 @@ function create_event_postype() {
         'hierarchical' => false,
         'has_archive' => 'bf_events',
         'rewrite' => array(
-            'slug' => 'events/%eventyear%/%eventmonth%',
+            'slug' => 'events/%bf_events_year%/%bf_events_month%',
             'with_front' => false
          ),
         'publicly_queryable' => true,
@@ -102,6 +101,29 @@ function create_event_postype() {
  
 }
 
+function wpd_single_event_queries( $query ){
+    if( $query->is_singular()
+        && $query->is_main_query()
+        && isset( $query->query_vars['bf_events'] ) ){
+            $meta_query = array(
+                array(
+                    'key'     => 'bf_events_year',
+                    'value'   => $query->query_vars['bf_events_year'],
+                    'compare' => '=',
+                    'type'    => 'numeric',
+                ),
+                array(
+                    'key'     => 'bf_events_month',
+                    'value'   => $query->query_vars['bf_events_month'],
+                    'compare' => '=',
+                    'type'    => 'numeric',
+                ),
+            );
+            $query->set( 'meta_query', $meta_query );
+    }
+}
+add_action( 'pre_get_posts', 'wpd_single_event_queries' );
+ 
 function create_eventcategory_taxonomy() {
  
 $labels = array(
@@ -162,7 +184,7 @@ function custom_post_order($query){
 if(is_admin()){
     add_action('pre_get_posts', 'custom_post_order');
 }
- 
+
 function bf_events_edit_columns($columns) {
  
 $columns = array(
