@@ -680,12 +680,12 @@ function event_details($content) {
     $url = get_post_meta( $post->ID, 'bf_events_url', true);
     if( $url ) $output .= "<div>More information: <a href='" . $url . "' target='_blank'>" . $url . "</a></div>";
     $postput = "";
-    $postput .= "<div><img class='right-margin' src='" . plugins_url( 'img/cal.jpg' , __FILE__ ) . "' border='0'/><a href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalNative'>Add to your calendar</a></div>";
+    $postput .= "<div><img class='right-margin' src='" . plugins_url( 'img/cal.jpg' , __FILE__ ) . "' border='0'/><a rel='nofollow' href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalNative'>Add to your calendar</a></div>";
     $postput .= "<div id=\"embedCalCode\">" .
         "Want people to put this event in their calendar? <span id=\"embedClick\">Click here</span> for embed code for your website." . 
         "</div>" .
         "<div id=\"embedCode\" class=\"removed\">" .
-        "<input name=\"embedCode\" id=\"embedCodeField\" value=\"<a href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalEmbed'>" .
+        "<input name=\"embedCode\" id=\"embedCodeField\" value=\"<a href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalEmbed'>" .
         "<img border='0' src='" . plugins_url( 'img/cal.jpg', __FILE__ ) . "'/> Add to your calendar: " . $post->post_title . "</a>\" />" .
         "</div>";
     $postput .= "<div class='bf_overline'>";
