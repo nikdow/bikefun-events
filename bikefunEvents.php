@@ -365,7 +365,6 @@ function bf_events_meta () {
     $meta_campaign_iCalNative = $custom["iCalNative"][0];
     $meta_campaign_iCalEmbed = $custom["iCalEmbed"][0];
     $meta_campaign_embedRef = get_post_meta('embedRefs', $post->ID, true );
-    $meta_image = $custom["bf_events_image"][0];
     $meta_pending_description = $custom["bf_pending_description"][0];
 
     // - grab wp time format -
@@ -410,7 +409,6 @@ function bf_events_meta () {
         <li><label>Your Email</label><input type="email" name="bf_events_email" value="<?php echo $meta_email; ?>" /><em>(not for publication)</em></li>
         <li><label>Meeting Place</label><input class="wide" name="bf_events_place" value="<?php echo $meta_place; ?>" /></li>
         <li><label>Web Page</label><input class="wide" type="url" name="bf_events_url" value="<?php echo $meta_url; ?>" /><em>(if any)</em></li>
-        <li><label>Image imported</label><input class="wide" type="url" name="bf_events_image" value="<?=$meta_image?>" /></li>
         <li><label><b>iCal downloads</b></label></li>
         <li><label>from this site</label><?=$meta_campaign_iCalNative?></li>
         <li><label>via embedding</label><?=$meta_campaign_iCalEmbed?></li>
