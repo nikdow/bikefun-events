@@ -33,7 +33,7 @@ function event_permalink($permalink, $post, $leavename) {
 //        $month = date('m', $sd + get_option( 'gmt_offset' ) * 3600);
         $startDT = new DateTime();
         
-        $startDT->setTimestamp( $sd );
+        $startDT->setTimestamp( (long) $sd );
         $startDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
         $year = $startDT->format( 'Y' );
         $month = $startDT->format ( 'm' );
