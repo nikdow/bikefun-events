@@ -101,6 +101,9 @@ function create_event_postype() {
  
 }
 
+/**
+ * @param $query WP_Query
+ */
 function wpd_single_event_queries( $query ){
     if( $query->is_singular()
         && $query->is_main_query()
@@ -160,8 +163,10 @@ add_action( 'init', 'create_eventcategory_taxonomy', 0 );
 
 add_filter ("manage_edit-bf_events_columns", "bf_events_edit_columns");
 add_action ("manage_posts_custom_column", "bf_events_custom_columns");
-
-/* Sort posts in wp_list_table by column in ascending or descending order. 
+/**
+ * @param $query WP_Query
+ *
+ * Sort posts in wp_list_table by column in ascending or descending order.
  * http://wordpress.stackexchange.com/questions/66455/how-to-change-order-of-posts-in-admin
  */
 function custom_post_order($query){
@@ -1093,7 +1098,7 @@ function bf_event_register ( $atts ) {
                 <li><label>Description</label></li>
                 <li class="tall"><?php wp_editor( $content, "editcontent", array("media_buttons"=>false, "textarea_name"=>"bf_description" ) ); ?></li>
                 <?php if( ! $post ) { ?>
-                    <li><input id="simpleTuring" name="areYouThere" type="checkbox" value="y" class="inputc"></td><td class="medfont">Tick this box to show you are not a robot</li>
+                    <li><input id="simpleTuring" name="areYouThere" type="checkbox" value="y" class="inputc"><span class="medfont">Tick this box to show you are not a robot</span></li>
                 <?php } ?>
                 <li><button type="button" id="saveButton" value="Send">submit</button></li>
                 <li><div id="ajax-loading" class="farleft"><img src="<?php echo get_site_url();?>/wp-includes/js/thickbox/loadingAnimation.gif"></div></li>
@@ -1109,7 +1114,7 @@ function bf_event_register ( $atts ) {
     </form>
 <?php return ob_get_clean();
 }
-add_shortcode('event', bf_event_register );
+add_shortcode('event', 'bf_event_register' );
 
 add_action( 'wp_ajax_nopriv_sendSecret', 'bf_sendSecret' );
 
