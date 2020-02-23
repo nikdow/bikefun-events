@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * https://code.google.com/p/ics-parser/
  */
 defined('ABSPATH') or die("No script kiddies please!");
@@ -32,7 +32,6 @@ function event_permalink($permalink, $post, $leavename) {
 //        $year = date('Y', $sd + get_option( 'gmt_offset' ) * 3600);
 //        $month = date('m', $sd + get_option( 'gmt_offset' ) * 3600);
         $startDT = new DateTime();
-        
         $startDT->setTimestamp( (int) $sd );
         $startDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
         $year = $startDT->format( 'Y' );
@@ -58,9 +57,7 @@ function event_permalink($permalink, $post, $leavename) {
 // 1. Custom Post Type Registration (Events)
 
 add_action( 'init', 'create_event_postype' );
- 
 function create_event_postype() {
- 
     $labels = array(
         'name' => _x('Events', 'post type general name'),
         'singular_name' => _x('Event', 'post type singular name'),
@@ -98,7 +95,6 @@ function create_event_postype() {
     );
 
     register_post_type( 'bf_events', $args);
- 
 }
 
 /**
@@ -126,9 +122,9 @@ function wpd_single_event_queries( $query ){
     }
 }
 add_action( 'pre_get_posts', 'wpd_single_event_queries' );
- 
+
 function create_eventcategory_taxonomy() {
- 
+
 $labels = array(
     'name' => _x( 'Categories', 'taxonomy general name' ),
     'singular_name' => _x( 'Category', 'taxonomy singular name' ),
@@ -145,7 +141,7 @@ $labels = array(
     'add_or_remove_items' => __( 'Add or remove categories' ),
     'choose_from_most_used' => __( 'Choose from the most used categories' ),
 );
- 
+
 register_taxonomy('bf_eventcategory','bf_events', array(
     'label' => __('Event Category'),
     'labels' => $labels,
@@ -156,7 +152,7 @@ register_taxonomy('bf_eventcategory','bf_events', array(
         'with_front'=>false),
 ));
 }
- 
+
 add_action( 'init', 'create_eventcategory_taxonomy', 0 );
 
 // 3. Show Columns
@@ -191,7 +187,7 @@ if(is_admin()){
 }
 
 function bf_events_edit_columns($columns) {
- 
+
 $columns = array(
     "cb" => "<input type=\"checkbox\" />",
     "bf_col_ev_date" => "Dates",
@@ -202,7 +198,7 @@ $columns = array(
     );
 return $columns;
 }
- 
+
 function bf_events_custom_columns($column)
 {
 global $post;
@@ -239,12 +235,12 @@ case "bf_col_ev_date":
     } else {
         $enddate = "";
     }
-    
+
     $startDT = new DateTime();
     $startDT->setTimestamp ( $startd );
     $startDT->setTimezone( new DateTimeZone ( get_option( 'timezone_string' ) ) );
     $startdate = $startDT->format( "D, j F Y" );
-    
+
     echo $startdate . '<br /><em>' . $enddate . '</em>';
 break;
 case "bf_col_ev_times":
@@ -264,7 +260,7 @@ case "bf_col_ev_times":
     $startDT->setTimestamp( $startt );
     $startDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
     $starttime = $startDT->format( $time_format );
-    
+
     echo $starttime . ' - ' .$endtime;
 break;
 case 'date':
@@ -337,15 +333,15 @@ break;
 }
 
 // 4. Show Meta-Box
- 
+
 add_action( 'admin_init', 'bf_events_create' );
- 
+
 function bf_events_create() {
     add_meta_box('bf_events_meta', 'Events', 'bf_events_meta', 'bf_events');
 }
- 
+
 function bf_events_meta () {
- 
+
     // - grab data -
 
     global $post;
@@ -379,7 +375,6 @@ function bf_events_meta () {
 
     // - populate today if empty, 00:00 for time -
 
-  
     // - convert to pretty formats -
 
     $clean_sd = $startDT->format( "D, d M Y" );
@@ -425,11 +420,11 @@ function bf_events_meta () {
 }
 
 // 5. Save Data
- 
+
 add_action ('save_post', 'save_bf_events');
- 
+
 function save_bf_events(){
- 
+
     global $post;
 
     // - still require nonce
@@ -456,7 +451,7 @@ function save_bf_events(){
     if( ! isset( $_POST[ "bf_events_enddate" ] ) ) :
         return $post;
     endif;
-    
+
     $updateendd = strtotime ( $_POST["bf_events_enddate"] . $_POST["bf_events_endtime"] );
     $formattedET = date ( $dateformat, $updateendd );
     $endDT = DateTime::createFromFormat($dateformat, $formattedET, new DateTimeZone( get_option( 'timezone_string' ) ) );
@@ -468,21 +463,20 @@ function save_bf_events(){
             update_post_meta( $post->ID, "bf_pending_description", $_POST[ "bf_pending_description"] );
         }
     }
-    
+
     update_post_meta($post->ID, "bf_events_email", $_POST["bf_events_email"] );
     update_post_meta($post->ID, "bf_events_place", $_POST["bf_events_place"] );
     update_post_meta($post->ID, "bf_events_url", $_POST["bf_events_url"] );
-    
 }
 
 // 6. Customize Update Messages
- 
+
 add_filter('post_updated_messages', 'events_updated_messages');
- 
+
 function events_updated_messages( $messages ) {
- 
+
   global $post, $post_ID;
- 
+
   $messages['bf_events'] = array(
     0 => '', // Unused. Messages start at index 1.
     1 => sprintf( __('Event updated. <a href="%s">View item</a>'), esc_url( get_permalink($post_ID) ) ),
@@ -499,7 +493,7 @@ function events_updated_messages( $messages ) {
       date_i18n( __( 'M j, Y @ G:i' ), strtotime( $post->post_date ) ), esc_url( get_permalink($post_ID) ) ),
     10 => sprintf( __('Event draft updated. <a target="_blank" href="%s">Preview event</a>'), esc_url( add_query_arg( 'preview', 'true', get_permalink($post_ID) ) ) ),
   );
- 
+
   return $messages;
 }
 
@@ -511,7 +505,7 @@ function events_styles() {
         return;
     wp_enqueue_style('ui-datepicker', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css');
 }
- 
+
 function events_scripts() {
     global $post_type;
     if( 'bf_events' !== $post_type )
@@ -522,10 +516,10 @@ function events_scripts() {
     wp_localize_script('admin', 'stylesheetUri', plugin_dir_url( __FILE__ ) );
     wp_enqueue_script('admin' );
 }
- 
+
 add_action( 'admin_print_styles-post.php', 'events_styles', 1000 );
 add_action( 'admin_print_styles-post-new.php', 'events_styles', 1000 );
- 
+
 add_action( 'admin_print_scripts-post.php', 'events_scripts', 1000 );
 add_action( 'admin_print_scripts-post-new.php', 'events_scripts', 1000 );
 
@@ -552,7 +546,7 @@ add_action('admin_init', 'add_admin_styles' );
  */
 
 // 1) FULL EVENTS
-// NB - this code is not used.  Instead, see the included file list-events.php 
+// NB - this code is not used.  Instead, see the included file list-events.php
 // which presents a paginated list of events in a more compact format - ngd - 1/9/2014
 //***********************************************************************************
 
@@ -659,22 +653,22 @@ add_shortcode('bf-events-full', 'bf_events_full'); // You can now call this shor
 function event_details($content) {
     global $post;
     if($post->post_type !== 'bf_events' ) return $content;
-    
+
     $output = "";
     $sd = get_post_meta( $post->ID, 'bf_events_startdate', true);
     $ed = get_post_meta( $post->ID, 'bf_events_enddate', true);
     $time_format = get_option('time_format');
-    
+
     $startDT = new DateTime();
     $startDT->setTimestamp( $sd );
     $startDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
     $stime = $startDT->format( $time_format );
-    
+
     $endDT = new DateTime();
     $endDT->setTimestamp( $ed );
     $endDT->setTimezone( new DateTimeZone ( get_option ( 'timezone_string' ) ) );
     $etime = $endDT->format( $time_format );
-    
+
     $startout = $startDT->format( "l, F j, Y" );
     if ( $ed ) $endout = $endDT->format( "l, F j, Y" );
     $output .= "<div>Start: " . $startout . " " . $stime . "</div>";
@@ -685,7 +679,7 @@ function event_details($content) {
     $postput = "";
     $postput .= "<div><img class='right-margin' src='" . plugins_url( 'img/cal.jpg' , __FILE__ ) . "' border='0'/><a rel='nofollow' href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalNative'>Add to your calendar</a></div>";
     $postput .= "<div id=\"embedCalCode\">" .
-        "Want people to put this event in their calendar? <span id=\"embedClick\">Click here</span> for embed code for your website." . 
+        "Want people to put this event in their calendar? <span id=\"embedClick\">Click here</span> for embed code for your website." .
         "</div>" .
         "<div id=\"embedCode\" class=\"removed\">" .
         "<input name=\"embedCode\" id=\"embedCodeField\" value=\"<a href='" . get_site_url() . "?iCal&p=" . $post->ID . "&campaign=iCalEmbed'>" .
@@ -753,14 +747,14 @@ class Events_RSS extends WP_Widget {
 		$title = apply_filters( 'widget_title', empty( $instance['title'] ) ? '' : $instance['title'], $instance, $this->id_base );
 
 		echo $before_widget;
-                    
+
                 ?>
                 <a href="<?=bloginfo('rss2_url') . "&post_type=bf_events";?>"><?=$title?></a>
                 <?php
-                
+
                 echo $after_widget;
         }
-        
+
         public function form ( $instance ) {
             if ( isset( $instance[ 'title' ] ) ) {
 			$title = $instance[ 'title' ];
@@ -770,7 +764,7 @@ class Events_RSS extends WP_Widget {
 		}
 		?>
 		<p>
-		<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label> 
+		<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label>
 		<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>">
 		</p>
                 <?php
@@ -788,16 +782,16 @@ function include_jquery_form_plugin(){
     global $post;
     if ($post->post_title === "List Your Event") { // only add this on the page that allows the upload
         wp_enqueue_script( 'jquery' );
-        wp_enqueue_script( 'jquery-form',array('jquery'),false,true ); 
+        wp_enqueue_script( 'jquery-form',array('jquery'),false,true );
     }
 }
 
 function bf_newEvent() {
     /*
-     * Is this an edit of an already-submitted event? 
-     * can be done via the postmeta bf_events_secret 
+     * Is this an edit of an already-submitted event?
+     * can be done via the postmeta bf_events_secret
      */
-    
+
     $existing = false;
     if ( isset( $_POST['bf_events_secret']) && $_POST['bf_events_secret']!=="" ) {
         $existing = true;
@@ -812,7 +806,7 @@ function bf_newEvent() {
             die;
         }
     }
-    
+
     $title = $_POST['title'];
     $bf_events_email = $_POST['bf_events_email'];
     $bf_events_place = $_POST['bf_events_place'];
@@ -826,28 +820,28 @@ function bf_newEvent() {
     require_once(ABSPATH . "wp-admin" . '/includes/image.php');
     require_once(ABSPATH . "wp-admin" . '/includes/file.php');
     require_once(ABSPATH . "wp-admin" . '/includes/media.php');
-   
+
     $areYouThere = $_POST['areYouThere'];
     if (
-        ! isset( $_POST['bf_nonce'] ) 
-        || ! wp_verify_nonce( $_POST['bf_nonce'], 'bf_new_event' ) 
+        ! isset( $_POST['bf_nonce'] )
+        || ! wp_verify_nonce( $_POST['bf_nonce'], 'bf_new_event' )
     ) {
 
        echo json_encode( array( 'error'=>'Sorry, your nonce did not verify.' ) );
        die;
     }
-    
+
     if($bf_events_email==="") {
         echo json_encode( array( 'error'=>'Please supply an email address' ) );
         die;
     }
     global $wpdb;
-    
+
     if( $areYouThere !== "y" && ! $existing ) {
         echo json_encode( array('error'=>'Please tick the box to show you are not a robot') );
         die;
     }
-        
+
     if ( $existing ) {
         $new_post = array (
             'ID' => $post_id,
@@ -874,7 +868,7 @@ function bf_newEvent() {
     $dateformat = "Y-m-d H:i:s";
     $formatDT = date( $dateformat, $updatestartd ); // formatted version;
     $startDT = DateTime::createFromFormat($dateformat, $formatDT, new DateTimeZone( get_option( 'timezone_string' ) ) );
-    
+
     update_post_meta($post_id, "bf_events_startdate", $startDT->getTimestamp() );
     update_post_meta($post_id, "bf_events_year", $startDT->format( "m" ) );
     update_post_meta($post_id, "bf_events_month", $startDT->format( "Y" ) );
@@ -885,19 +879,19 @@ function bf_newEvent() {
         $endDT = DateTime::createFromFormat($dateformat, $formatDT, new DateTimeZone( get_option( 'timezone_string' ) ) );
         update_post_meta($post_id, "bf_events_enddate", $endDT->getTimestamp() ); // new event comes here
     endif;
-   
+
     update_post_meta($post_id, "bf_events_email", $bf_events_email );
     update_post_meta($post_id, "bf_events_place", $bf_events_place );
     update_post_meta($post_id, "bf_events_url", $bf_events_url );
-     
+
     if ($_FILES) {
         foreach ($_FILES as $file => $array) {
-            
+
             if ( !isset($_FILES[$file]['error']) || is_array($_FILES[$file]['error']) ) {
                 echo json_encode( array('error'=>'Invalid upload parameters' ) );
                 die;
             }
-            
+
             switch ($_FILES[$file]['error']) {
                 case UPLOAD_ERR_OK:
                     break;
@@ -919,7 +913,7 @@ function bf_newEvent() {
                 echo json_encode( array('error'=>'Exceeded filesize limit 2MB.') );
                 die;
             }
-            
+
             // DO NOT TRUST $_FILES['upfile']['mime'] VALUE !!
             // Check MIME Type by yourself.
             $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -936,7 +930,7 @@ function bf_newEvent() {
                 echo json_encode( array('error'=>'incorrect file type') );
                 die;
             }
-            
+
             // You should name it uniquely.
             // DO NOT USE $_FILES['upfile']['name'] WITHOUT ANY VALIDATION !!
             // On this example, obtain safe unique name from its binary data.
@@ -951,13 +945,13 @@ function bf_newEvent() {
                     ", ext = " . $ext ) );
                 die;
             } */
-            
+
             $attach_id = media_handle_upload( $file, $post_id );
             //  attached image becomes thumbnail:
             update_post_meta($post_id,'_thumbnail_id',$attach_id);
-        }   
+        }
     }
-    
+
     $secret = generateRandomString();
     update_post_meta ( $post_id, "bf_events_secret", $secret );
     /*
@@ -984,7 +978,7 @@ function bf_newEvent() {
     $headers = array();
     $headers[] = 'From: "' . get_option('bf-organisation') . '" <' . get_option('newsletter-sender-address') . '>';
     $headers[] = "Content-type: text/html";
-    $message = $existing ? 
+    $message = $existing ?
             "A request has been made to update the description of an event." :
             "A new listing has been submitted for your approval.";
     $message .= "<P><a href='" . get_site_url() . "/wp-admin/post.php?post=" . $post_id . "&action=edit' target='_blank'>Click here to approve it</a>.</P>\n";
@@ -993,7 +987,7 @@ function bf_newEvent() {
     $message .= $bf_description;
     $recipient_option = get_option('event-moderator-email');
     wp_mail ( $recipient_option, $subject, $message, $headers );
-    
+
     echo json_encode( array( 'success'=>'Thanks for ' . ($existing ? "updating your " : "") . "listing with " . get_option('bf-organisation') . ". Look for " . ($existing ? "a new " : "an ") . "email from us with a link that allows you to edit your event." ) );
     die();
 }
@@ -1008,14 +1002,14 @@ function generateRandomString($length = 10) {
     }
     return $randomString;
 }
-/* 
+/*
  * Shortcode for event submission form
  */
 function register_event_script() {
     wp_register_script('jquery-ui', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js', array( 'jquery') );
     wp_register_style('ui-datepicker', '//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css');
     wp_register_script('event', plugins_url( 'js/event.js' , __FILE__ ), array('jquery', 'jquery-ui' ) );
-    wp_register_style('bf-event_styles', plugins_url( 'css/style.css', __FILE__ ) );	
+    wp_register_style('bf-event_styles', plugins_url( 'css/style.css', __FILE__ ) );
 }
 function enqueue_event_register_script() {	// support for signup form, which appears on two pages and in a popup
     global $add_event_register_script;
@@ -1028,10 +1022,10 @@ function enqueue_event_register_script() {	// support for signup form, which app
 }
 add_action('init', 'register_event_script' );
 add_action( 'wp_footer', 'enqueue_event_register_script' );
-function bf_event_register ( $atts ) { 
+function bf_event_register ( $atts ) {
     global $add_event_register_script;
     $add_event_register_script = true;
-    
+
     $a = shortcode_atts( array(
         'narrow' => '0',
         'popup' => '0',
@@ -1040,7 +1034,7 @@ function bf_event_register ( $atts ) {
     $popup = $a['popup']==='1';
     $clean_sd = date("D, j F Y");
     $clean_ed = date("D, j F Y");
-    
+
     if ( isset ( $_GET["secret"] ) ) {
         $bf_events_secret = $_GET["secret"];
         global $wpdb;
@@ -1074,18 +1068,17 @@ function bf_event_register ( $atts ) {
         if ( $bf_pending_description ) {
             $content = $bf_pending_description;
         } else {
-            $content = $post->post_content;        
+            $content = $post->post_content;
         }
     } else {
         $content = $post->post_content;
     }
-    
-    
+
     ob_start() ?>
 
     <form id="register" name="register" method="post" action="#" enctype="multipart/form-data">
         <div class="bf-meta">
-            <ul>            
+            <ul>
                 <li><label>Event title</label><input class='wide' type="text" name="title" id="name" value='<?=$post->post_title?>'></li>
                 <li><label>Start Date</label><input name="bf_events_startdate" class="bfdate" value="<?php echo $clean_sd; ?>" /></li>
                 <li><label>Start Time</label><input name="bf_events_starttime" value="<?=$clean_st?>" /></li>
@@ -1103,7 +1096,7 @@ function bf_event_register ( $atts ) {
                 <li><button type="button" id="saveButton" value="Send">submit</button></li>
                 <li><div id="ajax-loading" class="farleft"><img src="<?php echo get_site_url();?>/wp-includes/js/thickbox/loadingAnimation.gif"></div></li>
                 <li><div id="returnMessage"></div></li>
-            </ul> 
+            </ul>
             <input name="action" value="newEvent" type="hidden">
             <?php if ( $post ) { ?>
                 <input name='post_id' value='<?=$post->ID?>' type="hidden" />
@@ -1120,7 +1113,7 @@ add_action( 'wp_ajax_nopriv_sendSecret', 'bf_sendSecret' );
 
 function bf_sendSecret() {
     $post_id = $_POST['post_id'];
-    
+
     $post = get_post( $post_id, 'OBJECT' );
     if ( ! $post ) {
         echo json_encode( array( 'error'=>'Failed to find the post ' . $post_id . ', no email sent' ) );
@@ -1133,7 +1126,7 @@ function bf_sendSecret() {
     }
     $secret = generateRandomString();
     update_post_meta ( $post_id, "bf_events_secret", $secret );
-    
+
     $subject = "New link to edit your " . get_option('bf-organisation') . " event";
     $headers = array();
     $headers[] = 'From: "' . get_option('bf-organisation') . '" <' . get_option('newsletter-sender-address') . '>';
@@ -1168,23 +1161,23 @@ function bf_iCal() {
     $meta_email = $custom["bf_events_email"][0];
     $meta_place = $custom["bf_events_place"][0];
     $meta_url = $custom["bf_events_url"][0];
-    
+
     if( $campaign ) {
         $before = $custom[$campaign ][0];
         if( ! $before ) $before = 0;
         $before++;
-        update_post_meta( $post_id, $campaign, $before ); 
+        update_post_meta( $post_id, $campaign, $before );
     }
     if ( $campaign === 'iCalEmbed' ) {
         $before = get_post_meta( $post_id, 'embedRefs' ) ;
         if ( ! $before ) $before = array();
         $before[] = $_SERVER['HTTP_REFERER'];
         update_post_meta( $post_id, 'embedRefs', $before );
-                
+
     }
-    
+
     $tf = 'Ymd\THis';
-    
+
     header('Content-type: text/calendar; method="PUBLISH"; component="VEVENT";');
     header('Content-disposition: attachment; filename=bikefun.ics;');
     echo "BEGIN:VCALENDAR\n";
@@ -1246,12 +1239,12 @@ function event_options() {
 		wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
 	}
 
-            // variables for the field and option names 
+            // variables for the field and option names
             $hidden_field_name = 'bf_submit_hidden';
-            $options_array = array ( 
-                array('opt_name'=>'event-moderator-email', 'data_field_name'=>'event-moderator-email', 
+            $options_array = array (
+                array('opt_name'=>'event-moderator-email', 'data_field_name'=>'event-moderator-email',
                     'opt_label'=>'Event moderator (comma separated email addresses)', 'field_type'=>'textarea'),
-                array('opt_name'=>'bf-organisation', 'data_field_name'=>'bf_organisation', 
+                array('opt_name'=>'bf-organisation', 'data_field_name'=>'bf_organisation',
                     'opt_label'=>'Organisation name', 'field_type'=>'text'),
             );
 
@@ -1260,7 +1253,7 @@ function event_options() {
             if( isset($_POST[ $hidden_field_name ]) && $_POST[ $hidden_field_name ] == 'Y' ) {
 
                 foreach ($options_array as $option_array ) {
-                    
+
                     // Read their posted value
                     $opt_val = stripslashes_deep ( $_POST[ $option_array['data_field_name'] ] );
 
@@ -1283,8 +1276,8 @@ function event_options() {
             <form name="event_options" id="event_options" method="post" action="">
                 <input type="hidden" name="<?php echo $hidden_field_name; ?>" value="Y">
 
-                <?php 
-                foreach ( $options_array as $option_array ) { 
+                <?php
+                foreach ( $options_array as $option_array ) {
                     // Read in existing option value from database
                     $opt_val = get_option( $option_array[ 'opt_name' ] );
                     ?>
@@ -1311,7 +1304,7 @@ function event_options() {
  */
 add_action( 'admin_bar_menu', 'toolbar_event_link', 999 );
 function toolbar_event_link( $wp_admin_bar ) {
-    $args = array ( 
+    $args = array (
         'id'=>'bf-events',
         'title'=>'Events',
         'parent'=>'site-name',
@@ -1323,10 +1316,10 @@ function toolbar_event_link( $wp_admin_bar ) {
 
 
 /*
- * Added iCal based on 
+ * Added iCal based on
 
 Plugin Name: iCal for Events Manager
-Description: Creates an iCal feed for Events Manager at http://your-web-address/?ical. 
+Description: Creates an iCal feed for Events Manager at http://your-web-address/?ical.
 Version: 1.0.5
 Author: benjo4u
 Author URI: http://benjaminfleischer.com/code/ical-for-events-manager
@@ -1353,7 +1346,7 @@ $forceoffset = "";
         } else { echo 'no icalendar.ics file found'; }
 }
     $now = time() + ( get_option( 'gmt_offset' ) * 3600 );
-    $querystr = "SELECT metastart.meta_value as start, metaend.meta_value as end, 
+    $querystr = "SELECT metastart.meta_value as start, metaend.meta_value as end,
                 wposts.*, metaplace.meta_value as place
             FROM $wpdb->posts wposts, $wpdb->postmeta metastart, $wpdb->postmeta metaend, $wpdb->postmeta metaplace
             WHERE (wposts.ID = metastart.post_id AND wposts.ID = metaend.post_id and wposts.ID = metaplace.post_id)
@@ -1393,7 +1386,7 @@ else { $tzoffset_daylight = "+1100"; }
         if ($convertDateEnd < $convertDateStart ) {
             $convertDateEnd = $convertDateStart;
         }
-    
+
 $printableline = '\\n';
         $startDT = new DateTime();
         $startDT->setTimestamp( $convertDateStart );
@@ -1496,10 +1489,10 @@ exit;
 } else {
     echo $content;
 }
-    if 
+    if
 (defined('DEBUG'))
     {
-        #echo "\n" . $queryEvents . "\n";    
+        #echo "\n" . $queryEvents . "\n";
         #echo $eventStart . "\n";
     }
 
