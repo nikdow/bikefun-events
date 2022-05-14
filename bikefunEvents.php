@@ -366,6 +366,7 @@ function bf_events_meta () {
     $meta_campaign_iCalNative = $custom["iCalNative"][0];
     $meta_campaign_iCalEmbed = $custom["iCalEmbed"][0];
     $meta_campaign_embedRef = get_post_meta('embedRefs', $post->ID, true );
+    if( ! $meta_campaign_embedRef ) $meta_campaign_embedRef = [];
     $meta_pending_description = $custom["bf_pending_description"][0];
 
     // - grab wp time format -
